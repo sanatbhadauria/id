@@ -137,7 +137,7 @@ button:disabled{opacity:.6;cursor:progress}
       <label>Gap (mm)<input id="gap" type="number" min="0" max="100" step="1" value="60"></label>
       <label>Layout<select id="layout"><option value="stack">Front above back</option><option value="side">Side by side</option></select></label>
       <label>Position<select id="pos"><option value="top">Near the top</option><option value="mid">Centered</option></select></label>
-      <label class="check"><input id="lock" type="checkbox" checked> Lock crop to card shape (85.6 × 54 mm)</label>
+      <label class="check"><input id="lock" type="checkbox" checked> Keep the card shape (85.6 × 54 mm)</label>
       <label class="check"><input id="round" type="checkbox" checked> Round the corners</label>
       <label class="check"><input id="guide" type="checkbox" checked> Draw a thin cutting outline</label>
       <label style="grid-column:1/-1">Max file size for PDF and JPEG (KB, optional)<input id="maxkb" type="number" min="20" step="10" inputmode="numeric" placeholder="No limit"></label>
@@ -184,7 +184,6 @@ button:disabled{opacity:.6;cursor:progress}
 <div id="editor" class="modal" role="dialog" aria-modal="true" aria-label="Crop card image" hidden>
   <div class="m-top">
     <b id="m-title">Front side</b>
-    <div class="seg"><button id="m-crop">Crop</button><button id="m-persp">Perspective</button></div>
     <div class="seg"><button id="m-auto">Auto select</button><button id="m-rot">Rotate 90°</button><button id="m-reset">Reset</button></div>
   </div>
   <div class="m-stage" id="m-stage"></div>
@@ -201,7 +200,7 @@ const opt = () => ({ w: +$('#cw').value || 85.6, gap: +$('#gap').value || 0, lay
 
 ids.forEach(id => {
   const el = document.querySelector(`[data-slot=${id}]`);
-  const s = slots[id] = { id, el, drop: el.querySelector('.drop'), ed: el.querySelector('.editor'), cv: el.querySelector('canvas'), file: el.querySelector('input'), img: null, crop: null, quad: null, src: null, persp: false, f: { mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false }, k: 1, mode: null };
+  const s = slots[id] = { id, el, drop: el.querySelector('.drop'), ed: el.querySelector('.editor'), cv: el.querySelector('canvas'), file: el.querySelector('input'), img: null, crop: null, quad: null, src: null, persp: true, f: { mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false }, k: 1, mode: null };
   s.drop.onclick = () => s.file.click();
   s.drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.file.click(); } };
   s.file.onchange = () => s.file.files[0] && load(s, s.file.files[0]);
@@ -252,6 +251,7 @@ function draw(s) {
   x.strokeStyle = '#fff'; x.lineWidth = 2; x.beginPath(); poly(); x.stroke();
   x.fillStyle = '#fff'; x.strokeStyle = '#0b6e63';
   const hs = 9 * Math.max(1, s.cv.width / (s.cv.clientWidth || s.cv.width));
+  P.forEach((p, i) => { const n = P[(i + 1) % 4]; x.beginPath(); x.arc((p.x + n.x) / 2 * k, (p.y + n.y) / 2 * k, hs * .85, 0, 7); x.fill(); x.stroke(); });
   P.forEach(p => { x.fillRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); x.strokeRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); });
 }
 const corners = c => [{ n: 'tl', x: c.x, y: c.y, ax: c.x + c.w, ay: c.y + c.h }, { n: 'tr', x: c.x + c.w, y: c.y, ax: c.x, ay: c.y + c.h }, { n: 'bl', x: c.x, y: c.y + c.h, ax: c.x + c.w, ay: c.y }, { n: 'br', x: c.x + c.w, y: c.y + c.h, ax: c.x, ay: c.y }];
@@ -262,6 +262,8 @@ function bind(s) {
     if (s.persp) {
       const i = s.quad.findIndex(q => Math.abs(q.x - p.x) < p.hr && Math.abs(q.y - p.y) < p.hr);
       if (i >= 0) return { t: 'vert', i };
+      const ei = s.quad.findIndex((q, i) => { const n = s.quad[(i + 1) % 4]; return Math.abs((q.x + n.x) / 2 - p.x) < p.hr && Math.abs((q.y + n.y) / 2 - p.y) < p.hr; });
+      if (ei >= 0) return { t: 'edge', i: ei };
       return inPoly(s.quad, p) ? { t: 'move' } : null;
     }
     const c = s.crop; const h = corners(c).find(q => Math.abs(q.x - p.x) < p.hr && Math.abs(q.y - p.y) < p.hr); if (h) return { t: 'resize', h }; if (p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h) return { t: 'move' }; return null; };
@@ -271,8 +273,14 @@ function bind(s) {
   });
   s.cv.addEventListener('pointermove', e => {
     if (!s.img) return; const p = pt(e), c = s.crop, W = s.img.width, H = s.img.height;
-    if (!s.mode) { const h = hit(p); s.cv.style.cursor = !h ? 'default' : h.t === 'move' ? 'move' : h.t === 'vert' ? 'crosshair' : (h.h.n === 'tl' || h.h.n === 'br') ? 'nwse-resize' : 'nesw-resize'; return; }
-    if (s.mode.t === 'vert') {
+    if (!s.mode) { const h = hit(p); s.cv.style.cursor = !h ? 'default' : h.t === 'move' ? 'move' : (h.t === 'vert' || h.t === 'edge') ? 'crosshair' : (h.h.n === 'tl' || h.h.n === 'br') ? 'nwse-resize' : 'nesw-resize'; return; }
+    if (s.mode.t === 'edge') {
+      const i = s.mode.i, j = (i + 1) % 4, a = s.q0[i], b = s.q0[j];
+      let nx = -(b.y - a.y), ny = b.x - a.x; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+      const t = (p.x - s.p0.x) * nx + (p.y - s.p0.y) * ny;
+      s.quad[i] = { x: Math.max(0, Math.min(W, a.x + nx * t)), y: Math.max(0, Math.min(H, a.y + ny * t)) };
+      s.quad[j] = { x: Math.max(0, Math.min(W, b.x + nx * t)), y: Math.max(0, Math.min(H, b.y + ny * t)) };
+    } else if (s.mode.t === 'vert') {
       s.quad[s.mode.i] = { x: Math.max(0, Math.min(W, p.x)), y: Math.max(0, Math.min(H, p.y)) };
     } else if (s.persp && s.mode.t === 'move') {
       const xs = s.q0.map(q => q.x), ys = s.q0.map(q => q.y);
@@ -606,8 +614,7 @@ function drawThumb(s) {
 }
 function syncModal() {
   const s = MS.s; if (!s) return;
-  $('#m-crop').setAttribute('aria-pressed', !s.persp); $('#m-persp').setAttribute('aria-pressed', s.persp);
-  $('#m-hint').textContent = s.persp ? 'Drag each corner onto a corner of the card. Drag inside to move all four.' : 'Drag the box to move it. Drag a corner to resize.';
+  $('#m-hint').textContent = 'Drag the square corners onto the card corners. Drag the round dots on each edge to resize. Drag inside to move.';
 }
 function fit() {
   const s = MS.s; if (!MS.open || !s) return;
@@ -710,7 +717,7 @@ function autoSelect(s, silent, again) {
   s.quad = q.map(p => ({ ...p }));
   s.crop = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
   if (tilt > 3) { s.persp = true; s.el.querySelector('[data-act=persp]').setAttribute('aria-pressed', 'true'); }
-  if (MS.open) { fit(); syncModal(); preview(); if (tilt > 3) $('#m-hint').textContent = 'The card looks tilted, so Perspective mode is on. Fine-tune the corners if needed.'; }
+  if (MS.open) { fit(); syncModal(); preview(); }
   return true;
 }
 // Magnifier shown while a corner is being dragged, so it can be placed precisely.
@@ -719,7 +726,7 @@ function loupe(s, e) {
   if (!MS.open || !m || m.t === 'move') { L.hidden = true; return; }
   const c = s.crop, rect = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }];
   const poly = s.persp ? s.quad : rect;
-  const p = m.t === 'vert' ? s.quad[m.i] : ({ tl: rect[0], tr: rect[1], br: rect[2], bl: rect[3] })[m.h.n];
+  const p = m.t === 'vert' ? s.quad[m.i] : m.t === 'edge' ? { x: (s.quad[m.i].x + s.quad[(m.i + 1) % 4].x) / 2, y: (s.quad[m.i].y + s.quad[(m.i + 1) % 4].y) / 2 } : ({ tl: rect[0], tr: rect[1], br: rect[2], bl: rect[3] })[m.h.n];
   const S = 300, ds = (s.cv.clientWidth / s.img.width) || 1, sw = 150 / 4 / ds, x0 = p.x - sw / 2, y0 = p.y - sw / 2, k = S / sw;
   L.width = S; L.height = S; const x = L.getContext('2d');
   x.fillStyle = '#000'; x.fillRect(0, 0, S, S); x.imageSmoothingQuality = 'high';
@@ -731,8 +738,6 @@ function loupe(s, e) {
   if (e.clientX < left + 210 && e.clientY < top + 210) left = r.right - 160;
   L.style.left = left + 'px'; L.style.top = top + 'px'; L.hidden = false;
 }
-$('#m-crop').onclick = () => { const s = MS.s; if (s && s.persp) { s.el.querySelector('[data-act=persp]').click(); syncModal(); fit(); } };
-$('#m-persp').onclick = () => { const s = MS.s; if (s && !s.persp) { s.el.querySelector('[data-act=persp]').click(); syncModal(); fit(); } };
 $('#m-auto').onclick = () => MS.s && autoSelect(MS.s, false);
 $('#m-rot').onclick = () => { const s = MS.s; if (s) { s.el.querySelector('[data-act=rot]').click(); fit(); } };
 $('#m-reset').onclick = () => { const s = MS.s; if (s) { initCrop(s); syncModal(); fit(); preview(); } };
