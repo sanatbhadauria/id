@@ -26,14 +26,15 @@ main{max-width:1200px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-tem
 .drop:hover,.drop.over,.drop:focus-visible{border-color:var(--accent);color:var(--ink);outline:none}
 .drop b{display:block;color:var(--ink);font-size:17px}
 .editor{display:none}
-.editor canvas{width:100%;height:auto;display:block;border-radius:6px;touch-action:none;background:#000}
+.editor canvas{width:calc(100% - 36px);margin:0 auto;height:auto;display:block;border-radius:6px;touch-action:none;background:#000}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 button,.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
 button:hover{border-color:var(--accent)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 button.primary,button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .hint{color:var(--muted);font-size:14px;margin:8px 0 0}
-.side{position:sticky;top:calc(12px + env(safe-area-inset-top,0px))}
+.side{position:sticky;top:calc(72px + env(safe-area-inset-top,0px))}
+@media (min-width:901px){.side{max-height:calc(100vh - 84px);overflow:auto}}
 @media (max-width:900px){.side{position:static}}
 .sheet{background:var(--page);box-shadow:var(--shadow);border-radius:2px;width:100%;aspect-ratio:210/297;display:block}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px}
@@ -46,14 +47,36 @@ input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);bor
 .adj summary{cursor:pointer;font-weight:700}
 .sliders{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:10px 0 0}
 .sliders input{width:100%;accent-color:var(--accent)}
+[hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:12}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;display:flex;gap:6px;padding:8px 20px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto}
+nav.tabs a{padding:9px 14px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:500;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+nav.tabs a[aria-selected=true]{background:var(--accent);color:var(--accent-ink)}
+main.single{grid-template-columns:1fr;max-width:760px}
+.res{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.note{color:var(--muted);font-size:14px;margin:10px 0 0;min-height:1.4em}
+button:disabled{opacity:.6;cursor:progress}
+@media (max-width:600px){
+  header{padding:18px 14px 4px}
+  nav.tabs{padding:8px 14px}
+  main{padding:12px 14px 32px;gap:16px}
+  .card{padding:12px}
+  button,.btn{min-height:44px;padding:10px 14px}
+  input[type=number],select{font-size:16px;min-height:44px}
+  .sliders{grid-template-columns:1fr}
+  .sliders input{height:30px}
+  .drop{min-height:140px}
+  .card h2{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>ID card to A4</h1>
-  <p>Add the front and back photos, crop each to the card edges, then download one A4 page with both sides ready to print. Everything stays in your browser.</p>
+  <h1>Card and file tools</h1>
+  <p>Make a print-ready A4 sheet of an ID card, convert files, or shrink them to a size limit. Everything stays in your browser.</p>
 </header>
-<main>
+<nav class="tabs" aria-label="Tools"><a href="#a4" data-tab="a4">ID card to A4</a><a href="#convert" data-tab="convert">Convert</a><a href="#compress" data-tab="compress">Compress</a></nav>
+<main id="p-a4">
   <div class="col">
     <section class="card" data-slot="front">
       <h2>Front side <span class="row" style="margin:0"><button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button><button data-act="rot">Rotate 90°</button><button data-act="clear">Remove</button></span></h2>
@@ -80,14 +103,47 @@ input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);bor
       <label class="check"><input id="lock" type="checkbox" checked> Lock crop to card shape (85.6 × 54 mm)</label>
       <label class="check"><input id="round" type="checkbox" checked> Round the corners</label>
       <label class="check"><input id="guide" type="checkbox" checked> Draw a thin cutting outline</label>
+      <label style="grid-column:1/-1">Max file size for PDF and JPEG (KB, optional)<input id="maxkb" type="number" min="20" step="10" inputmode="numeric" placeholder="No limit"></label>
     </div>
     <div class="actions">
       <button class="primary" id="pdf">Download PDF</button>
+      <button id="jpg">Download JPEG</button>
       <button id="png">Download PNG</button>
     </div>
     <p class="hint">Print at 100% scale (no “fit to page”) so the card keeps its real size.</p>
   </aside>
 </main>
+<main id="p-convert" class="single" hidden>
+  <section class="card">
+    <h2>Convert files</h2>
+    <div class="drop" id="cv-drop" tabindex="0" role="button" aria-label="Choose files to convert"><div><b>Drop PDF, JPG, PNG or WebP files</b>or tap to choose (you can pick several)</div></div>
+    <input type="file" id="cv-file" accept=".pdf,application/pdf,image/*" multiple hidden>
+    <div class="controls">
+      <label>Convert to<select id="cv-to"><option value="jpg">JPG image (.jpg)</option><option value="pdf">PDF (.pdf)</option></select></label>
+      <label>JPG quality (%)<input id="cv-q" type="number" min="10" max="100" value="90" inputmode="numeric"></label>
+      <label>PDF page to image (dpi)<select id="cv-dpi"><option>100</option><option selected>150</option><option>200</option><option>300</option></select></label>
+      <label>Images in a PDF<select id="cv-fit"><option value="a4">Fit on A4 pages</option><option value="img">Same size as image</option></select></label>
+    </div>
+    <div class="actions"><button class="primary" id="cv-go">Convert</button></div>
+    <p class="note" id="cv-note" aria-live="polite"></p>
+    <div id="cv-out"></div>
+  </section>
+</main>
+<main id="p-compress" class="single" hidden>
+  <section class="card">
+    <h2>Compress a file</h2>
+    <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose a file to compress"><div><b>Drop a PDF, JPG, PNG or WebP file</b>or tap to choose</div></div>
+    <input type="file" id="cp-file" accept=".pdf,application/pdf,image/*" hidden>
+    <div class="controls">
+      <label style="grid-column:1/-1">Target size (KB)<input id="cp-kb" type="number" min="5" step="10" value="200" inputmode="numeric"></label>
+    </div>
+    <div class="actions"><button class="primary" id="cp-go">Compress</button></div>
+    <p class="note" id="cp-note" aria-live="polite"></p>
+    <div id="cp-out"></div>
+    <p class="hint">Images are saved as JPG. PDFs are rebuilt from page images, so their text will no longer be selectable. The file is first tuned by quality, then reduced in size if the quality alone cannot reach the target.</p>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const RATIO = 85.6 / 54, $ = s => document.querySelector(s);
@@ -146,12 +202,13 @@ function draw(s) {
   x.beginPath(); x.rect(0, 0, s.cv.width, s.cv.height); poly(); x.fill('evenodd');
   x.strokeStyle = '#fff'; x.lineWidth = 2; x.beginPath(); poly(); x.stroke();
   x.fillStyle = '#fff'; x.strokeStyle = '#0b6e63';
-  P.forEach(p => { x.fillRect(p.x * k - 7, p.y * k - 7, 14, 14); x.strokeRect(p.x * k - 7, p.y * k - 7, 14, 14); });
+  const hs = 9 * Math.max(1, s.cv.width / (s.cv.clientWidth || s.cv.width));
+  P.forEach(p => { x.fillRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); x.strokeRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); });
 }
 const corners = c => [{ n: 'tl', x: c.x, y: c.y, ax: c.x + c.w, ay: c.y + c.h }, { n: 'tr', x: c.x + c.w, y: c.y, ax: c.x, ay: c.y + c.h }, { n: 'bl', x: c.x, y: c.y + c.h, ax: c.x + c.w, ay: c.y }, { n: 'br', x: c.x + c.w, y: c.y + c.h, ax: c.x, ay: c.y }];
 
 function bind(s) {
-  const pt = e => { const r = s.cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (s.cv.width / r.width) / s.k, y: (e.clientY - r.top) * (s.cv.height / r.height) / s.k, hr: 24 * (s.cv.width / r.width) / s.k }; };
+  const pt = e => { const r = s.cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (s.cv.width / r.width) / s.k, y: (e.clientY - r.top) * (s.cv.height / r.height) / s.k, hr: 32 * (s.cv.width / r.width) / s.k }; };
   const hit = p => {
     if (s.persp) {
       const i = s.quad.findIndex(q => Math.abs(q.x - p.x) < p.hr && Math.abs(q.y - p.y) < p.hr);
@@ -324,20 +381,167 @@ function compose(cv, dpi, placeholders) {
 const preview = () => compose($('#sheet'), 100, true);
 
 function exportCanvas() { const c = document.createElement('canvas'); compose(c, 300, false); return c; }
-function save(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 function need() { if (!ids.some(i => slots[i].img)) { alert('Add at least one card image first.'); return false; } return true; }
-$('#png').onclick = () => { if (need()) exportCanvas().toBlob(b => save(b, 'id-card-a4.png')); };
-$('#pdf').onclick = () => {
-  if (!need()) return;
-  const c = exportCanvas();
-  if (!window.jspdf) { alert('The PDF library did not load. Download the PNG instead.'); return; }
-  const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
-  pdf.addImage(c.toDataURL('image/jpeg', .95), 'JPEG', 0, 0, 210, 297);
-  pdf.save('id-card-a4.pdf');
-};
+const maxKB = () => +$('#maxkb').value || 0;
+async function run(sel, fn) { busy(sel, true); await tick(); try { await fn(); } catch (e) { alert('Something went wrong: ' + (e.message || e)); } busy(sel, false); }
+$('#png').onclick = () => need() && run('#png', async () => save(await toBlob(exportCanvas(), 'image/png'), 'id-card-a4.png'));
+$('#jpg').onclick = () => need() && run('#jpg', async () => { const c = exportCanvas(), kb = maxKB(); save(kb ? await jpegToSize(c, kb) : await toBlob(c, 'image/jpeg', .95), 'id-card-a4.jpg'); });
+$('#pdf').onclick = () => need() && run('#pdf', async () => {
+  if (!window.jspdf) { alert('The PDF library did not load. Download the JPEG instead.'); return; }
+  const pg = [{ c: exportCanvas(), w: 210, h: 297 }], kb = maxKB();
+  save(kb ? await pdfToSize(pg, kb) : toPdf(pg, .95), 'id-card-a4.pdf');
+});
 ['cw', 'gap', 'layout', 'pos', 'round', 'guide'].forEach(i => $('#' + i).addEventListener('input', preview));
 $('#lock').addEventListener('change', () => { if ($('#lock').checked) ids.forEach(i => { const s = slots[i]; if (s.img) { initCrop(s); draw(s); } }); preview(); });
 preview();
+addEventListener('resize', () => ids.forEach(i => slots[i].img && draw(slots[i])));
+
+/* ---------- shared helpers ---------- */
+const fmt = n => n >= 1048576 ? (n / 1048576).toFixed(2) + ' MB' : (n / 1024).toFixed(1) + ' KB';
+const toBlob = (c, t, q) => new Promise(r => c.toBlob(r, t, q));
+const tick = () => new Promise(r => setTimeout(r, 0));
+const say = (el, t) => { el.textContent = t; };
+function busy(sel, on) { const b = $(sel); if (on) { b.dataset.t = b.textContent; b.textContent = 'Working…'; } else b.textContent = b.dataset.t || b.textContent; b.disabled = on; }
+async function save(blob, name) {
+  try { const d = window.claude && await claude.use('downloads'); if (d) { await d.save({ filename: name, data: blob }); return; } }
+  catch (e) { if (e && e.code === 'declined') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+async function imgCanvas(file) {
+  const bmp = await createImageBitmap(file).catch(() => null);
+  const src = bmp || await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read ' + file.name)); i.src = URL.createObjectURL(file); });
+  const c = document.createElement('canvas'); c.width = src.width || src.naturalWidth; c.height = src.height || src.naturalHeight;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0); return c;
+}
+async function jpegToSize(canvas, kb) {
+  const limit = kb * 1024; let c = canvas;
+  for (let pass = 0; pass < 8; pass++) {
+    let b = await toBlob(c, 'image/jpeg', .92); if (b.size <= limit) return b;
+    let lo = .05, hi = .92, best = null;
+    for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; b = await toBlob(c, 'image/jpeg', m); if (b.size <= limit) { best = b; lo = m; } else hi = m; }
+    if (best) return best;
+    const n = document.createElement('canvas'); n.width = Math.max(50, Math.round(c.width * .8)); n.height = Math.max(50, Math.round(c.height * .8));
+    const x = n.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, n.width, n.height); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, n.width, n.height); c = n; await tick();
+  }
+  return toBlob(c, 'image/jpeg', .05);
+}
+function toPdf(pages, q) {
+  const { jsPDF } = window.jspdf; let pdf;
+  pages.forEach(p => {
+    const o = p.w > p.h ? 'l' : 'p', f = [Math.min(p.w, p.h), Math.max(p.w, p.h)];
+    if (!pdf) pdf = new jsPDF({ unit: 'mm', format: f, orientation: o, compress: true }); else pdf.addPage(f, o);
+    const b = p.box || [0, 0, p.w, p.h];
+    pdf.addImage(p.c.toDataURL('image/jpeg', q), 'JPEG', b[0], b[1], b[2], b[3], undefined, 'FAST');
+  });
+  return pdf.output('blob');
+}
+function shrink(pages, f) {
+  return pages.map(p => { const c = document.createElement('canvas'); c.width = Math.max(50, Math.round(p.c.width * f)); c.height = Math.max(50, Math.round(p.c.height * f)); const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(p.c, 0, 0, c.width, c.height); return { ...p, c }; });
+}
+async function pdfToSize(pages, kb) {
+  const limit = kb * 1024; let cur = pages;
+  for (let pass = 0; pass < 7; pass++) {
+    let b = toPdf(cur, .9); if (b.size <= limit) return b;
+    let lo = .08, hi = .9, best = null;
+    for (let i = 0; i < 6; i++) { await tick(); const m = (lo + hi) / 2; b = toPdf(cur, m); if (b.size <= limit) { best = b; lo = m; } else hi = m; }
+    if (best) return best;
+    cur = shrink(cur, .8); await tick();
+  }
+  return toPdf(cur, .08);
+}
+async function pdfPages(file, dpi, note) {
+  if (!window.pdfjsLib) throw new Error('The PDF reader did not load. Check your connection and try again.');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    note && note(`Reading page ${i} of ${pdf.numPages}…`);
+    const pg = await pdf.getPage(i), v1 = pg.getViewport({ scale: 1 });
+    let sc = dpi / 72; const px = v1.width * v1.height * sc * sc; if (px > 16e6) sc *= Math.sqrt(16e6 / px);
+    const vp = pg.getViewport({ scale: sc }), c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: x, viewport: vp }).promise;
+    out.push({ c, w: v1.width * 25.4 / 72, h: v1.height * 25.4 / 72 }); await tick();
+  }
+  return out;
+}
+function pageFor(c, fit) {
+  if (fit === 'img') return { c, w: c.width * 25.4 / 150, h: c.height * 25.4 / 150 };
+  const land = c.width > c.height, w = land ? 297 : 210, h = land ? 210 : 297, s = Math.min(w / c.width, h / c.height), iw = c.width * s, ih = c.height * s;
+  return { c, w, h, box: [(w - iw) / 2, (h - ih) / 2, iw, ih] };
+}
+const isPdf = f => /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
+const stem = f => f.name.replace(/\.[^.]+$/, '');
+function result(box, blob, name, extra) {
+  const row = document.createElement('div'); row.className = 'res';
+  const t = document.createElement('span'); t.textContent = name + ' · ' + fmt(blob.size) + (extra ? ' · ' + extra : '');
+  const b = document.createElement('button'); b.className = 'primary'; b.textContent = 'Download'; b.onclick = () => save(blob, name);
+  row.append(t, b); box.append(row);
+}
+
+/* ---------- file pickers ---------- */
+const picks = { cv: [], cp: [] };
+function wireDrop(p, multi) {
+  const drop = $(`#${p}-drop`), inp = $(`#${p}-file`);
+  const set = fs => { picks[p] = multi ? fs : fs.slice(0, 1); const d = document.createElement('div'), b = document.createElement('b'); b.textContent = picks[p].map(f => f.name).join(', '); d.append(b, 'Tap or drop to change'); drop.replaceChildren(d); };
+  drop.onclick = () => inp.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
+  inp.onchange = () => inp.files.length && set([...inp.files]);
+  ['dragover', 'dragenter'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => e.dataTransfer.files.length && set([...e.dataTransfer.files]));
+}
+wireDrop('cv', true); wireDrop('cp', false);
+
+/* ---------- convert ---------- */
+$('#cv-go').onclick = async () => {
+  const fs = picks.cv, out = $('#cv-out'), note = $('#cv-note'); out.replaceChildren();
+  if (!fs.length) return say(note, 'Choose at least one file first.');
+  const to = $('#cv-to').value, q = Math.min(100, Math.max(10, +$('#cv-q').value || 90)) / 100, dpi = +$('#cv-dpi').value, fit = $('#cv-fit').value;
+  busy('#cv-go', true); await tick();
+  try {
+    const pages = [], skipped = [];
+    for (const f of fs) {
+      say(note, 'Working on ' + f.name + '…'); await tick();
+      if (isPdf(f)) {
+        if (to === 'pdf') { skipped.push(f.name); continue; }
+        const pp = await pdfPages(f, dpi, t => say(note, t));
+        for (let i = 0; i < pp.length; i++) result(out, await toBlob(pp[i].c, 'image/jpeg', q), stem(f) + (pp.length > 1 ? '-page' + (i + 1) : '') + '.jpg');
+      } else {
+        const c = await imgCanvas(f);
+        if (to === 'jpg') result(out, await toBlob(c, 'image/jpeg', q), stem(f) + '.jpg'); else pages.push(pageFor(c, fit));
+      }
+    }
+    if (pages.length) result(out, toPdf(pages, q), (fs.length === 1 ? stem(fs[0]) : 'converted') + '.pdf');
+    say(note, 'Done.' + (skipped.length ? ' Skipped files that are already PDF: ' + skipped.join(', ') + '.' : ''));
+  } catch (e) { say(note, 'Could not convert: ' + (e.message || e)); }
+  busy('#cv-go', false);
+};
+
+/* ---------- compress ---------- */
+$('#cp-go').onclick = async () => {
+  const f = picks.cp[0], out = $('#cp-out'), note = $('#cp-note'), kb = +$('#cp-kb').value; out.replaceChildren();
+  if (!f) return say(note, 'Choose a file first.');
+  if (!(kb >= 5)) return say(note, 'Enter a target size of at least 5 KB.');
+  if (f.size <= kb * 1024) return say(note, 'This file is already ' + fmt(f.size) + ', under your ' + kb + ' KB target, so there is nothing to compress.');
+  busy('#cp-go', true); await tick();
+  try {
+    let blob;
+    if (isPdf(f)) { const pp = await pdfPages(f, 150, t => say(note, t)); say(note, 'Compressing…'); await tick(); blob = await pdfToSize(pp, kb); }
+    else { say(note, 'Compressing…'); await tick(); blob = await jpegToSize(await imgCanvas(f), kb); }
+    result(out, blob, stem(f) + '-compressed.' + (isPdf(f) ? 'pdf' : 'jpg'), 'was ' + fmt(f.size));
+    say(note, blob.size <= kb * 1024 ? 'Done. The file is under your target.' : 'This is the smallest size I could reach, but it is still above your target.');
+  } catch (e) { say(note, 'Could not compress: ' + (e.message || e)); }
+  busy('#cp-go', false);
+};
+
+/* ---------- tabs ---------- */
+const PAGES = ['a4', 'convert', 'compress'];
+function route() {
+  const h = location.hash.slice(1), p = PAGES.includes(h) ? h : 'a4';
+  PAGES.forEach(n => { $('#p-' + n).hidden = n !== p; document.querySelector(`[data-tab=${n}]`).setAttribute('aria-selected', n === p); });
+  if (p === 'a4') ids.forEach(i => slots[i].img && draw(slots[i]));
+}
+addEventListener('hashchange', route); route();
 </script>
 </body>
 </html>
