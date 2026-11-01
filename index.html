@@ -14,9 +14,12 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif}
-header{max-width:1200px;margin:0 auto;padding:28px 20px 8px}
-h1{margin:0 0 6px;font-size:clamp(28px,4vw,40px);line-height:1.1;font-weight:700;letter-spacing:-.02em}
-header p{margin:0;color:var(--muted);max-width:60ch}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:linear-gradient(135deg,#0d1b24,#12303a);color:#eef4f7;border-bottom:1px solid rgba(255,255,255,.08)}
+.bar-in{max-width:1200px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}
+.brand svg{width:40px;height:40px;flex:none}
+.brand b{display:block;font-size:19px;line-height:1.15;letter-spacing:-.01em}
+.brand small{display:block;font-size:13px;color:#9fb6c2}
 main{max-width:1200px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:24px;align-items:start}
 @media (max-width:900px){main{grid-template-columns:1fr}}
 .col{display:grid;gap:16px}
@@ -26,7 +29,22 @@ main{max-width:1200px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-tem
 .drop:hover,.drop.over,.drop:focus-visible{border-color:var(--accent);color:var(--ink);outline:none}
 .drop b{display:block;color:var(--ink);font-size:17px}
 .editor{display:none}
-.editor canvas{width:calc(100% - 36px);margin:0 auto;height:auto;display:block;border-radius:6px;touch-action:none;background:#000}
+.thumb{display:block;max-width:100%;max-height:240px;width:auto;height:auto;margin:0 auto;border-radius:8px;border:1px solid var(--line);cursor:pointer}
+.editor>.hint,[data-slot] h2 [data-act=persp],[data-slot] h2 [data-act=rot]{display:none}
+.modal{position:fixed;inset:0;height:100vh;height:100dvh;z-index:50;background:#0b1217;color:#eef4f7;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.m-top,.m-bot{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 14px;background:#12202b}
+.m-top b{margin-right:auto}
+.m-bot{justify-content:space-between}
+.m-bot>div{display:flex;gap:8px}
+.m-hint{font-size:14px;color:#9fb6c2;flex:1 1 200px}
+.m-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
+.m-stage canvas{flex:none;touch-action:none;background:#000;border-radius:4px}
+.seg{display:flex;gap:4px}
+.modal button{background:#1c2f3b;color:#eef4f7;border-color:#2f4756}
+.modal button.primary{background:#3cc2b0;color:#06211d;border-color:#3cc2b0}
+.modal button[aria-pressed=true]{background:#fff;color:#10202b;border-color:#fff}
+body.lock{overflow:hidden}
+#loupe{position:fixed;width:150px;height:150px;border-radius:50%;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:60;pointer-events:none;background:#000}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 button,.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
 button:hover{border-color:var(--accent)}
@@ -48,17 +66,32 @@ input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);bor
 .sliders{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:10px 0 0}
 .sliders input{width:100%;accent-color:var(--accent)}
 [hidden]{display:none!important}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:12}
-nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;display:flex;gap:6px;padding:8px 20px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto}
-nav.tabs a{padding:9px 14px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:500;white-space:nowrap;min-height:44px;display:flex;align-items:center}
-nav.tabs a[aria-selected=true]{background:var(--accent);color:var(--accent-ink)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:#0d1b24;z-index:12}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;background:rgba(255,255,255,.08);padding:4px;border-radius:12px}
+nav.tabs a{padding:8px 14px;border-radius:9px;color:#cfe0e8;text-decoration:none;font-weight:500;white-space:nowrap;min-height:40px;display:flex;align-items:center}
+nav.tabs a:hover{color:#fff}
+nav.tabs a:focus-visible{outline:3px solid #3cc2b0;outline-offset:2px}
+nav.tabs a[aria-selected=true]{background:#fff;color:#10202b}
 main.single{grid-template-columns:1fr;max-width:760px}
 .res{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
 .note{color:var(--muted);font-size:14px;margin:10px 0 0;min-height:1.4em}
 button:disabled{opacity:.6;cursor:progress}
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  :root{padding:0}
+  body{background:#fff}
+  body::before{display:none}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  #printImg{display:block;width:210mm;height:297mm}
+}
 @media (max-width:600px){
-  header{padding:18px 14px 4px}
-  nav.tabs{padding:8px 14px}
+  .bar{position:static}
+  .bar-in{padding:10px 14px}
+  .brand small{display:none}
+  nav.tabs{width:100%}
+  nav.tabs a{flex:1;justify-content:center;min-height:44px}
   main{padding:12px 14px 32px;gap:16px}
   .card{padding:12px}
   button,.btn{min-height:44px;padding:10px 14px}
@@ -71,11 +104,15 @@ button:disabled{opacity:.6;cursor:progress}
 </style>
 </head>
 <body>
-<header>
-  <h1>Card and file tools</h1>
-  <p>Make a print-ready A4 sheet of an ID card, convert files, or shrink them to a size limit. Everything stays in your browser.</p>
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="#a4">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="8" width="36" height="24" rx="5" fill="#3cc2b0"/><circle cx="13" cy="18" r="4" fill="#10202b"/><path d="M7 27c1-4 5-5 6-5s5 1 6 5z" fill="#10202b"/><rect x="23" y="15" width="11" height="2.5" rx="1.2" fill="#10202b"/><rect x="23" y="21" width="8" height="2.5" rx="1.2" fill="#10202b"/></svg>
+      <span><b>Card and file tools</b><small>Private. Everything runs in your browser.</small></span>
+    </a>
+    <nav class="tabs" aria-label="Tools"><a href="#a4" data-tab="a4">ID card to A4</a><a href="#convert" data-tab="convert">Convert</a><a href="#compress" data-tab="compress">Compress</a></nav>
+  </div>
 </header>
-<nav class="tabs" aria-label="Tools"><a href="#a4" data-tab="a4">ID card to A4</a><a href="#convert" data-tab="convert">Convert</a><a href="#compress" data-tab="compress">Compress</a></nav>
 <main id="p-a4">
   <div class="col">
     <section class="card" data-slot="front">
@@ -106,11 +143,12 @@ button:disabled{opacity:.6;cursor:progress}
       <label style="grid-column:1/-1">Max file size for PDF and JPEG (KB, optional)<input id="maxkb" type="number" min="20" step="10" inputmode="numeric" placeholder="No limit"></label>
     </div>
     <div class="actions">
-      <button class="primary" id="pdf">Download PDF</button>
+      <button class="primary" id="print">Print</button>
+      <button id="pdf">Download PDF</button>
       <button id="jpg">Download JPEG</button>
       <button id="png">Download PNG</button>
     </div>
-    <p class="hint">Print at 100% scale (no “fit to page”) so the card keeps its real size.</p>
+    <p class="hint">Print uses your browser print dialog at 100% scale. If nothing opens here, download the PDF and print that instead.</p>
   </aside>
 </main>
 <main id="p-convert" class="single" hidden>
@@ -143,11 +181,22 @@ button:disabled{opacity:.6;cursor:progress}
     <p class="hint">Images are saved as JPG. PDFs are rebuilt from page images, so their text will no longer be selectable. The file is first tuned by quality, then reduced in size if the quality alone cannot reach the target.</p>
   </section>
 </main>
+<div id="editor" class="modal" role="dialog" aria-modal="true" aria-label="Crop card image" hidden>
+  <div class="m-top">
+    <b id="m-title">Front side</b>
+    <div class="seg"><button id="m-crop">Crop</button><button id="m-persp">Perspective</button></div>
+    <div class="seg"><button id="m-auto">Auto select</button><button id="m-rot">Rotate 90°</button><button id="m-reset">Reset</button></div>
+  </div>
+  <div class="m-stage" id="m-stage"></div>
+  <canvas id="loupe" width="300" height="300" hidden aria-hidden="true"></canvas>
+  <div class="m-bot"><span class="m-hint" id="m-hint"></span><div><button id="m-cancel">Cancel</button><button class="primary" id="m-done">Done</button></div></div>
+</div>
+<div id="printArea"><img id="printImg" alt="A4 page to print"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const RATIO = 85.6 / 54, $ = s => document.querySelector(s);
-const ids = ['front', 'back'], slots = {};
+const ids = ['front', 'back'], slots = {}, MS = { s: null, snap: null, open: false };
 const opt = () => ({ w: +$('#cw').value || 85.6, gap: +$('#gap').value || 0, layout: $('#layout').value, pos: $('#pos').value, lock: $('#lock').checked, round: $('#round').checked, guide: $('#guide').checked });
 
 ids.forEach(id => {
@@ -167,13 +216,13 @@ ids.forEach(id => {
     el.querySelector('.editor .hint').textContent = s.persp ? 'Drag each corner onto a corner of the card. Drag inside to move all four.' : 'Drag the box to move it. Drag a corner to resize.';
     if (s.img) { const c = s.crop; if (s.persp) s.quad = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }]; draw(s); preview(); }
   };
-  bind(s);
+  bind(s); mountThumb(s);
 });
 adjustPanel();
 
 function load(s, f) {
   const im = new Image();
-  im.onload = () => { s.img = im; initCrop(s); show(s); };
+  im.onload = () => { s.img = im; initCrop(s); autoSelect(s, true); show(s); openEditor(s); };
   im.src = URL.createObjectURL(f);
 }
 function show(s) { s.drop.style.display = 'none'; s.ed.style.display = 'block'; draw(s); preview(); }
@@ -192,7 +241,7 @@ function rotate(s) {
 }
 function draw(s) {
   const im = s.img; if (!im) return;
-  const cw = Math.min(im.width, 760); s.k = cw / im.width;
+  const cw = Math.min(im.width, 1400); s.k = cw / im.width;
   s.cv.width = cw; s.cv.height = Math.round(im.height * s.k);
   const x = s.cv.getContext('2d'), k = s.k, c = s.crop;
   x.drawImage(im, 0, 0, s.cv.width, s.cv.height);
@@ -378,7 +427,7 @@ function compose(cv, dpi, placeholders) {
     if (stack) cy += i.h + o.gap; else cx += i.w + o.gap;
   });
 }
-const preview = () => compose($('#sheet'), 100, true);
+const preview = () => { compose($('#sheet'), 100, true); if (!MS.open) ids.forEach(i => drawThumb(slots[i])); };
 
 function exportCanvas() { const c = document.createElement('canvas'); compose(c, 300, false); return c; }
 function need() { if (!ids.some(i => slots[i].img)) { alert('Add at least one card image first.'); return false; } return true; }
@@ -394,7 +443,7 @@ $('#pdf').onclick = () => need() && run('#pdf', async () => {
 ['cw', 'gap', 'layout', 'pos', 'round', 'guide'].forEach(i => $('#' + i).addEventListener('input', preview));
 $('#lock').addEventListener('change', () => { if ($('#lock').checked) ids.forEach(i => { const s = slots[i]; if (s.img) { initCrop(s); draw(s); } }); preview(); });
 preview();
-addEventListener('resize', () => ids.forEach(i => slots[i].img && draw(slots[i])));
+addEventListener('resize', () => fit());
 
 /* ---------- shared helpers ---------- */
 const fmt = n => n >= 1048576 ? (n / 1048576).toFixed(2) + ' MB' : (n / 1024).toFixed(1) + ' KB';
@@ -533,6 +582,163 @@ $('#cp-go').onclick = async () => {
   } catch (e) { say(note, 'Could not compress: ' + (e.message || e)); }
   busy('#cp-go', false);
 };
+
+$('#print').onclick = () => need() && run('#print', async () => {
+  const c = document.createElement('canvas'); compose(c, 200, false);
+  const img = $('#printImg'); img.src = c.toDataURL('image/jpeg', .95); await img.decode().catch(() => {});
+  window.print();
+});
+
+/* ---------- full screen editor ---------- */
+function mountThumb(s) {
+  s.thumb = document.createElement('canvas'); s.thumb.className = 'thumb'; s.thumb.title = 'Tap to edit the crop';
+  s.thumb.onclick = () => openEditor(s);
+  const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'center';
+  const b = document.createElement('button'); b.className = 'primary'; b.textContent = 'Edit crop'; b.onclick = () => openEditor(s);
+  row.append(b); s.cv.replaceWith(s.thumb); s.thumb.after(row);
+  ['pointerdown', 'pointermove'].forEach(t => s.cv.addEventListener(t, e => loupe(s, e)));
+  ['pointerup', 'pointercancel'].forEach(t => s.cv.addEventListener(t, () => { $('#loupe').hidden = true; }));
+}
+function drawThumb(s) {
+  if (!s.img || !s.thumb) return;
+  const w = 360, h = Math.max(40, Math.round(w / aspect(s, opt()))), c = cardCanvas(s, w, h);
+  s.thumb.width = w; s.thumb.height = h; s.thumb.getContext('2d').drawImage(c, 0, 0);
+}
+function syncModal() {
+  const s = MS.s; if (!s) return;
+  $('#m-crop').setAttribute('aria-pressed', !s.persp); $('#m-persp').setAttribute('aria-pressed', s.persp);
+  $('#m-hint').textContent = s.persp ? 'Drag each corner onto a corner of the card. Drag inside to move all four.' : 'Drag the box to move it. Drag a corner to resize.';
+}
+function fit() {
+  const s = MS.s; if (!MS.open || !s) return;
+  draw(s);
+  const r = $('#m-stage').getBoundingClientRect(), k = Math.min((r.width - 24) / s.cv.width, (r.height - 24) / s.cv.height);
+  s.cv.style.width = Math.floor(s.cv.width * k) + 'px'; s.cv.style.height = Math.floor(s.cv.height * k) + 'px';
+  draw(s);
+}
+function openEditor(s) {
+  if (!s.img) return;
+  MS.s = s; MS.open = true;
+  MS.snap = { img: s.img, crop: { ...s.crop }, quad: s.quad.map(q => ({ ...q })), persp: s.persp };
+  $('#m-title').textContent = s.id === 'front' ? 'Front side' : 'Back side';
+  $('#m-stage').replaceChildren(s.cv);
+  $('#editor').hidden = false; document.body.classList.add('lock');
+  syncModal(); fit();
+}
+function closeEditor(commit) {
+  const s = MS.s; if (!s) return;
+  if (!commit) { const o = MS.snap; s.img = o.img; s.crop = o.crop; s.quad = o.quad; s.persp = o.persp; s.src = null; }
+  MS.open = false; MS.s = null; $('#editor').hidden = true; document.body.classList.remove('lock');
+  s.cv.style.width = ''; s.cv.style.height = ''; s.cv.remove();
+  preview();
+}
+function hullOf(pts) {
+  pts.sort((a, b) => a.x - b.x || a.y - b.y);
+  const cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x), lo = [], up = [];
+  for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  up.pop(); lo.pop(); return lo.concat(up);
+}
+function inter(a, b, c, d) {
+  const den = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x); if (Math.abs(den) < 1e-9) return null;
+  const t = ((c.x - a.x) * (d.y - c.y) - (c.y - a.y) * (d.x - c.x)) / den;
+  return t > 1 ? { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) } : null;
+}
+function toQuad(P) {
+  P = P.slice();
+  while (P.length > 4) {
+    const n = P.length; let best = null;
+    for (let i = 0; i < n; i++) {
+      const a = P[(i + n - 1) % n], b = P[i], c = P[(i + 1) % n], d = P[(i + 2) % n], X = inter(a, b, c, d); if (!X) continue;
+      const ar = Math.abs((b.x - X.x) * (c.y - X.y) - (c.x - X.x) * (b.y - X.y)) / 2;
+      if (!best || ar < best.ar) best = { i, X, ar };
+    }
+    if (!best) return P;
+    const j = (best.i + 1) % n; P = P.map((p, k) => k === best.i ? best.X : p).filter((p, k) => k !== j);
+  }
+  return P;
+}
+// Finds the card by separating it from the background colour, then fits a four-corner shape around it.
+function detectCard(img) {
+  const f = Math.min(1, 320 / Math.max(img.width, img.height)), w = Math.max(8, Math.round(img.width * f)), h = Math.max(8, Math.round(img.height * f));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, N = w * h, m = Math.max(2, Math.round(Math.min(w, h) * .03)), ring = [];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (i < m || j < m || i >= w - m || j >= h - m) ring.push((j * w + i) * 4);
+  const med = ch => { const a = ring.map(p => d[p + ch]).sort((u, v) => u - v); return a[a.length >> 1]; };
+  const bg = [med(0), med(1), med(2)], dist = new Uint8Array(N), hist = new Array(256).fill(0);
+  for (let p = 0; p < N; p++) { const dr = d[p * 4] - bg[0], dg = d[p * 4 + 1] - bg[1], db = d[p * 4 + 2] - bg[2], v = Math.min(255, Math.round(Math.sqrt(dr * dr + dg * dg + db * db) * .58)); dist[p] = v; hist[v]++; }
+  let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sB = 0, wB = 0, best = -1, thr = 20;
+  for (let t = 0; t < 256; t++) { wB += hist[t]; if (!wB) continue; const wF = N - wB; if (!wF) break; sB += t * hist[t]; const mB = sB / wB, mF = (sum - sB) / wF, bt = wB * wF * (mB - mF) * (mB - mF); if (bt > best) { best = bt; thr = t; } }
+  thr = Math.max(14, thr);
+  const seen = new Uint8Array(N), q = new Int32Array(N); let bs = 0, bl = 0, head = 0;
+  for (let s0 = 0; s0 < N; s0++) {
+    if (seen[s0] || dist[s0] <= thr) continue;
+    const st = head; q[head++] = s0; seen[s0] = 1;
+    for (let k = st; k < head; k++) {
+      const p = q[k], px = p % w, py = (p / w) | 0;
+      if (px > 0 && !seen[p - 1] && dist[p - 1] > thr) { seen[p - 1] = 1; q[head++] = p - 1; }
+      if (px < w - 1 && !seen[p + 1] && dist[p + 1] > thr) { seen[p + 1] = 1; q[head++] = p + 1; }
+      if (py > 0 && !seen[p - w] && dist[p - w] > thr) { seen[p - w] = 1; q[head++] = p - w; }
+      if (py < h - 1 && !seen[p + w] && dist[p + w] > thr) { seen[p + w] = 1; q[head++] = p + w; }
+    }
+    if (head - st > bl) { bl = head - st; bs = st; }
+  }
+  if (bl < N * .12 || bl > N * .97) return null;
+  const inC = new Uint8Array(N); for (let k = 0; k < bl; k++) inC[q[bs + k]] = 1;
+  const pts = [];
+  for (let k = 0; k < bl; k++) {
+    const p = q[bs + k], px = p % w, py = (p / w) | 0;
+    if (px === 0 || py === 0 || px === w - 1 || py === h - 1 || !inC[p - 1] || !inC[p + 1] || !inC[p - w] || !inC[p + w]) pts.push({ x: px, y: py });
+  }
+  const hl = hullOf(pts); if (hl.length < 4) return null;
+  const P = toQuad(hl); if (P.length !== 4) return null;
+  const Q = P.map(p => ({ x: Math.max(0, Math.min(img.width, p.x / f)), y: Math.max(0, Math.min(img.height, p.y / f)) }));
+  const cx = Q.reduce((a, p) => a + p.x, 0) / 4, cy = Q.reduce((a, p) => a + p.y, 0) / 4;
+  Q.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  let i0 = 0; Q.forEach((p, i) => { if (p.x + p.y < Q[i0].x + Q[i0].y) i0 = i; });
+  return [0, 1, 2, 3].map(i => Q[(i0 + i) % 4]);
+}
+function autoSelect(s, silent, again) {
+  let q = null; try { q = detectCard(s.img); } catch (e) { q = null; }
+  if (!q) { if (!silent && MS.open) $('#m-hint').textContent = 'Could not find the card edges. Drag the corners onto the card.'; return false; }
+  const dd = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), cw = (dd(q[0], q[1]) + dd(q[3], q[2])) / 2, ch = (dd(q[0], q[3]) + dd(q[1], q[2])) / 2;
+  if (!again && ch > cw * 1.15) { rotate(s); return autoSelect(s, silent, true); }
+  const tilt = Math.max(...[[q[0], q[1]], [q[3], q[2]]].map(p => Math.abs(Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x))), ...[[q[0], q[3]], [q[1], q[2]]].map(p => Math.abs(Math.atan2(p[1].x - p[0].x, p[1].y - p[0].y)))) * 180 / Math.PI;
+  const xs = q.map(p => p.x), ys = q.map(p => p.y);
+  s.quad = q.map(p => ({ ...p }));
+  s.crop = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  if (tilt > 3) { s.persp = true; s.el.querySelector('[data-act=persp]').setAttribute('aria-pressed', 'true'); }
+  if (MS.open) { fit(); syncModal(); preview(); if (tilt > 3) $('#m-hint').textContent = 'The card looks tilted, so Perspective mode is on. Fine-tune the corners if needed.'; }
+  return true;
+}
+// Magnifier shown while a corner is being dragged, so it can be placed precisely.
+function loupe(s, e) {
+  const L = $('#loupe'), m = s.mode;
+  if (!MS.open || !m || m.t === 'move') { L.hidden = true; return; }
+  const c = s.crop, rect = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }];
+  const poly = s.persp ? s.quad : rect;
+  const p = m.t === 'vert' ? s.quad[m.i] : ({ tl: rect[0], tr: rect[1], br: rect[2], bl: rect[3] })[m.h.n];
+  const S = 300, ds = (s.cv.clientWidth / s.img.width) || 1, sw = 150 / 4 / ds, x0 = p.x - sw / 2, y0 = p.y - sw / 2, k = S / sw;
+  L.width = S; L.height = S; const x = L.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, S, S); x.imageSmoothingQuality = 'high';
+  x.drawImage(s.img, x0, y0, sw, sw, 0, 0, S, S);
+  x.strokeStyle = '#3cc2b0'; x.lineWidth = 2; x.beginPath();
+  poly.forEach((q, i) => i ? x.lineTo((q.x - x0) * k, (q.y - y0) * k) : x.moveTo((q.x - x0) * k, (q.y - y0) * k)); x.closePath(); x.stroke();
+  x.strokeStyle = '#fff'; x.lineWidth = 1; x.beginPath(); x.moveTo(S / 2, S / 2 - 22); x.lineTo(S / 2, S / 2 + 22); x.moveTo(S / 2 - 22, S / 2); x.lineTo(S / 2 + 22, S / 2); x.stroke();
+  const r = $('#m-stage').getBoundingClientRect(); let left = r.left + 10; const top = r.top + 10;
+  if (e.clientX < left + 210 && e.clientY < top + 210) left = r.right - 160;
+  L.style.left = left + 'px'; L.style.top = top + 'px'; L.hidden = false;
+}
+$('#m-crop').onclick = () => { const s = MS.s; if (s && s.persp) { s.el.querySelector('[data-act=persp]').click(); syncModal(); fit(); } };
+$('#m-persp').onclick = () => { const s = MS.s; if (s && !s.persp) { s.el.querySelector('[data-act=persp]').click(); syncModal(); fit(); } };
+$('#m-auto').onclick = () => MS.s && autoSelect(MS.s, false);
+$('#m-rot').onclick = () => { const s = MS.s; if (s) { s.el.querySelector('[data-act=rot]').click(); fit(); } };
+$('#m-reset').onclick = () => { const s = MS.s; if (s) { initCrop(s); syncModal(); fit(); preview(); } };
+$('#m-cancel').onclick = () => closeEditor(false);
+$('#m-done').onclick = () => closeEditor(true);
+addEventListener('keydown', e => { if (e.key === 'Escape' && MS.open) closeEditor(false); });
 
 /* ---------- tabs ---------- */
 const PAGES = ['a4', 'convert', 'compress'];
