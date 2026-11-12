@@ -11,12 +11,13 @@
  * 7. Drag-and-Drop Zones & File Inputs
  * 8. Form Controls, Sliders & Action Buttons
  * 9. A4 Sheet Preview & Page Sidebar
- * 10. Full-Screen Crop & Perspective Editor Modal
- * 11. Full-Screen Card & Sheet Preview Modal
- * 12. Magnifier Loupe
- * 13. Processing Results & Status Messages
- * 14. Responsive Breakpoints (Tablets & Mobile)
- * 15. Print Media Stylesheet (100% Scale A4 Output)
+ * 10. Passport Photo & Multi-Paper Sheet Previews
+ * 11. Full-Screen Crop & Perspective Editor Modal
+ * 12. Full-Screen Card & Sheet Preview Modal
+ * 13. Magnifier Loupe
+ * 14. Processing Results & Status Messages
+ * 15. Responsive Breakpoints (Tablets & Mobile)
+ * 16. Print Media Stylesheet (Dynamic & A4 Output)
  */
 
 /* ==========================================================================
@@ -750,7 +751,43 @@ select {
 }
 
 /* ==========================================================================
-   10. Full-Screen Crop & Perspective Editor Modal
+   10. Passport Photo & Multi-Paper Sheet Previews
+   ========================================================================== */
+.paper-sheet {
+  background: var(--page);
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.paper-sheet:hover {
+  box-shadow: 0 4px 12px rgba(22, 32, 43, 0.18), 0 16px 36px rgba(22, 32, 43, 0.16);
+}
+
+.sheet-info-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.sheet-info-badge b {
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   11. Full-Screen Crop & Perspective Editor Modal
    ========================================================================== */
 .modal {
   position: fixed;
@@ -836,7 +873,7 @@ select {
 }
 
 /* ==========================================================================
-   11. Full-Screen Card & Sheet Preview Modal
+   12. Full-Screen Card & Sheet Preview Modal
    ========================================================================== */
 .preview-modal .m-top {
   display: flex;
@@ -944,7 +981,7 @@ select {
 }
 
 /* ==========================================================================
-   12. Magnifier Loupe
+   13. Magnifier Loupe
    ========================================================================== */
 #loupe {
   position: fixed;
@@ -959,7 +996,7 @@ select {
 }
 
 /* ==========================================================================
-   13. Processing Results & Status Messages
+   14. Processing Results & Status Messages
    ========================================================================== */
 .res {
   display: flex;
@@ -992,7 +1029,7 @@ select {
 }
 
 /* ==========================================================================
-   14. Responsive Breakpoints
+   15. Responsive Breakpoints
    ========================================================================== */
 @media (max-width: 900px) {
   main {
@@ -1110,7 +1147,7 @@ select {
 }
 
 /* ==========================================================================
-   15. Print Media Stylesheet (100% Scale A4 Output)
+   16. Print Media Stylesheet (Dynamic & A4 Output)
    ========================================================================== */
 #printArea {
   display: none;

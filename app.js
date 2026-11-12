@@ -3,10 +3,11 @@
  * 
  * Features:
  * - ID Card to A4 Composer with physical scale (85.6 × 54 mm, ISO/IEC 7810 ID-1 standard)
+ * - Passport Size Photo Grid & Print Studio (A4, 4×6", 5×7", A5, Letter)
  * - 4-corner perspective correction with projective bilinear warping
  * - Auto card edge detection (background separation, Otsu thresholding, convex hull, quad fit)
  * - Interactive full-screen editor with corner loupe magnifier
- * - Full-screen inspection preview in card section with zoom, pan, and side switching
+ * - Full-screen inspection preview with zoom, pan, and side switching
  * - Color grading & document filters (B&W, document contrast, brightness, sharpening)
  * - Batch PDF and image conversion (PDF to JPG, images to PDF with A4 fit)
  * - Batch target-size file compressor (binary search quality + dimensional downscaling)
@@ -41,7 +42,7 @@ const modalState = {
 /** Full-screen card and sheet preview state */
 const previewModalState = {
   isOpen: false,
-  target: 'front', // 'front' | 'back' | 'a4'
+  target: 'front', // 'front' | 'back' | 'a4' | 'pp-photo' | 'pp-sheet'
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -54,13 +55,33 @@ const previewModalState = {
 
 /** RequestAnimationFrame ID for debounced sheet preview rendering */
 let previewRafId = null;
+let passportPreviewRafId = null;
+
+/** Standard paper sizes in millimeters */
+const PAPER_SIZES = {
+  '4x6': { name: '4 × 6 inch (4R Photo)', w: 101.6, h: 152.4 },
+  'a4': { name: 'A4', w: 210, h: 297 },
+  '5x7': { name: '5 × 7 inch (5R Photo)', w: 127, h: 177.8 },
+  'a5': { name: 'A5', w: 148, h: 210 },
+  'letter': { name: 'US Letter', w: 215.9, h: 279.4 }
+};
+
+/** Standard international passport and visa photo size presets (mm) */
+const PASSPORT_PRESETS = {
+  '35x45': { w: 35, h: 45 },
+  '51x51': { w: 51, h: 51 },
+  '35x35': { w: 35, h: 35 },
+  '30x40': { w: 30, h: 40 },
+  '33x48': { w: 33, h: 48 },
+  '50x70': { w: 50, h: 70 }
+};
 
 /* ==========================================================================
    2. Configuration & Option Helpers
    ========================================================================== */
 
 /**
- * Reads layout and styling options from the UI controls.
+ * Reads layout and styling options from the UI controls for ID card tool.
  * @returns {Object} Current configuration parameters.
  */
 function getOptions() {
@@ -80,8 +101,77 @@ function getOptions() {
  */
 const getMaxKB = () => +$('#maxkb').value || 0;
 
+/**
+ * Reads passport photo settings, paper dimensions, margins, and count options.
+ */
+function getPassportOptions() {
+  const preset = $('#pp-preset') ? $('#pp-preset').value : '35x45';
+  const photoWidth = +$('#pp-w').value || 35;
+  const photoHeight = +$('#pp-h').value || 45;
+
+  return {
+    preset,
+    photoWidth,
+    photoHeight,
+    aspectRatio: photoWidth / photoHeight,
+    paperKey: $('#pp-paper') ? $('#pp-paper').value : '4x6',
+    orientation: $('#pp-orient') ? $('#pp-orient').value : 'auto',
+    countMode: $('#pp-count-mode') ? $('#pp-count-mode').value : 'fill',
+    customCount: Math.max(1, Math.min(100, +$('#pp-count').value || 8)),
+    gap: Math.max(0, +$('#pp-gap').value || 0),
+    margin: Math.max(0, +$('#pp-margin').value || 0),
+    hasBorder: $('#pp-border') ? $('#pp-border').checked : true,
+    borderStyle: $('#pp-border-style') ? $('#pp-border-style').value : 'light'
+  };
+}
+
+/**
+ * Calculates effective paper dimensions and orientation for passport photo printing.
+ */
+function getPassportPaperDimensions() {
+  const opt = getPassportOptions();
+  const base = PAPER_SIZES[opt.paperKey] || PAPER_SIZES['4x6'];
+  let w = base.w;
+  let h = base.h;
+
+  if (opt.orientation === 'portrait') {
+    w = Math.min(base.w, base.h);
+    h = Math.max(base.w, base.h);
+  } else if (opt.orientation === 'landscape') {
+    w = Math.max(base.w, base.h);
+    h = Math.min(base.w, base.h);
+  } else {
+    // Auto-orientation: select orientation that fits more photos
+    const countP = calculateMaxGridCount(Math.min(base.w, base.h), Math.max(base.w, base.h), opt);
+    const countL = calculateMaxGridCount(Math.max(base.w, base.h), Math.min(base.w, base.h), opt);
+    if (countL.total > countP.total) {
+      w = Math.max(base.w, base.h);
+      h = Math.min(base.w, base.h);
+    } else {
+      w = Math.min(base.w, base.h);
+      h = Math.max(base.w, base.h);
+    }
+  }
+  return { name: base.name, w, h };
+}
+
+/**
+ * Calculates rows, columns, and total photos that fit inside printable boundaries.
+ */
+function calculateMaxGridCount(paperW, paperH, opt) {
+  const usableW = Math.max(0, paperW - 2 * opt.margin);
+  const usableH = Math.max(0, paperH - 2 * opt.margin);
+  const cols = Math.floor((usableW + opt.gap) / (opt.photoWidth + opt.gap));
+  const rows = Math.floor((usableH + opt.gap) / (opt.photoHeight + opt.gap));
+  return {
+    cols: Math.max(0, cols),
+    rows: Math.max(0, rows),
+    total: Math.max(0, cols * rows)
+  };
+}
+
 /* ==========================================================================
-   3. Slot Initialization & Event Binding
+   3. Slot Initialization & Event Binding (ID Card Slots)
    ========================================================================== */
 
 SLOT_IDS.forEach(slotId => {
@@ -208,7 +298,7 @@ SLOT_IDS.forEach(slotId => {
   mountThumbnail(slot);
 });
 
-// Setup filter adjustments panel
+// Setup filter adjustments panel for ID card tool
 initAdjustmentsPanel();
 
 // A4 sheet full screen triggers
@@ -242,7 +332,9 @@ function loadCardImage(slot, file) {
     slot.img = img;
     slot.srcData = null;
     initDefaultCrop(slot);
-    autoSelectCard(slot, true);
+    if (slot.id !== 'passport') {
+      autoSelectCard(slot, true);
+    }
     showCardSlot(slot);
     openModalEditor(slot);
   };
@@ -258,18 +350,28 @@ function loadCardImage(slot, file) {
  */
 function showCardSlot(slot) {
   slot.drop.style.display = 'none';
-  slot.editor.style.display = 'block';
-  drawCropCanvas(slot);
-  requestPreview();
+  if (slot.editor) slot.editor.style.display = 'block';
+  if (slot.id === 'passport') {
+    $('#pp-editor-box').style.display = 'block';
+    $('#pp-photo-actions').style.display = 'inline-flex';
+    drawPassportThumbnail();
+    requestPassportPreview();
+  } else {
+    drawCropCanvas(slot);
+    requestPreview();
+  }
 }
 
 /**
- * Initializes crop rectangle to default centered ~92% bounds matching card aspect ratio.
+ * Initializes crop rectangle to centered bounds matching the appropriate aspect ratio.
  */
 function initDefaultCrop(slot) {
   const W = slot.img.width;
   const H = slot.img.height;
-  const ratio = getOptions().lockAspect ? CARD_ASPECT_RATIO : W / H;
+  const ratio = slot.id === 'passport'
+    ? getPassportOptions().aspectRatio
+    : (getOptions().lockAspect ? CARD_ASPECT_RATIO : W / H);
+
   let w = W * 0.92;
   let h = w / ratio;
 
@@ -311,8 +413,14 @@ function rotateSlot(slot) {
   slot.img = canvas;
   slot.srcData = null;
   initDefaultCrop(slot);
-  drawCropCanvas(slot);
-  requestPreview();
+
+  if (slot.id === 'passport') {
+    drawPassportThumbnail();
+    requestPassportPreview();
+  } else {
+    drawCropCanvas(slot);
+    requestPreview();
+  }
 }
 
 /* ==========================================================================
@@ -362,7 +470,7 @@ function drawCropCanvas(slot) {
   tracePolygon();
   ctx.fill('evenodd');
 
-  // Card boundary outline
+  // Boundary outline
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -394,9 +502,6 @@ function drawCropCanvas(slot) {
   });
 }
 
-/**
- * Returns rectangular corner definition for axis-aligned crop mode.
- */
 function getRectangleCorners(c) {
   return [
     { n: 'tl', x: c.x, y: c.y, ax: c.x + c.w, ay: c.y + c.h },
@@ -406,9 +511,6 @@ function getRectangleCorners(c) {
   ];
 }
 
-/**
- * Binds pointer events for dragging corners, edges, and moving the crop area.
- */
 function bindCanvasEvents(slot) {
   const getPointerPoint = e => {
     const rect = slot.cv.getBoundingClientRect();
@@ -528,9 +630,13 @@ function bindCanvasEvents(slot) {
       let w = Math.abs(pt.x - ax);
       let h = Math.abs(pt.y - ay);
 
-      if (getOptions().lockAspect) {
-        w = Math.max(30, Math.min(w, maxW, maxH * CARD_ASPECT_RATIO));
-        h = w / CARD_ASPECT_RATIO;
+      const targetRatio = slot.id === 'passport'
+        ? getPassportOptions().aspectRatio
+        : (getOptions().lockAspect ? CARD_ASPECT_RATIO : null);
+
+      if (targetRatio) {
+        w = Math.max(30, Math.min(w, maxW, maxH * targetRatio));
+        h = w / targetRatio;
       } else {
         w = Math.max(30, Math.min(w, maxW));
         h = Math.max(30, Math.min(h, maxH));
@@ -542,7 +648,11 @@ function bindCanvasEvents(slot) {
     }
 
     drawCropCanvas(slot);
-    requestPreview();
+    if (slot.id === 'passport') {
+      requestPassportPreview();
+    } else {
+      requestPreview();
+    }
   });
 
   const stopDrag = () => {
@@ -558,7 +668,7 @@ function bindCanvasEvents(slot) {
    ========================================================================== */
 
 /**
- * Initializes the image filters and enhancement panel controls.
+ * Initializes the image filters and enhancement panel controls for ID card tool.
  */
 function initAdjustmentsPanel() {
   const panel = $('#adjust');
@@ -827,7 +937,7 @@ function warpPerspective(slot, outWidth, outHeight) {
 
 /**
  * Creates an offscreen canvas containing the cropped, perspective-corrected,
- * and filtered card image.
+ * and filtered card or photo image.
  */
 function createCardCanvas(slot, targetWidth, targetHeight) {
   const canvas = document.createElement('canvas');
@@ -853,9 +963,6 @@ function createCardCanvas(slot, targetWidth, targetHeight) {
   return canvas;
 }
 
-/**
- * Tests whether a point lies within a polygon using the ray-casting algorithm.
- */
 function isPointInPolygon(polygon, point) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -869,10 +976,10 @@ function isPointInPolygon(polygon, point) {
   return inside;
 }
 
-/**
- * Calculates aspect ratio of the card crop selection.
- */
 function calculateAspectRatio(slot, options) {
+  if (slot.id === 'passport') {
+    return getPassportOptions().aspectRatio;
+  }
   if (!slot.persp) return slot.crop.w / slot.crop.h;
   if (options.lockAspect) return CARD_ASPECT_RATIO;
 
@@ -884,12 +991,9 @@ function calculateAspectRatio(slot, options) {
 }
 
 /* ==========================================================================
-   8. A4 Sheet Composition & Export
+   8. A4 Sheet Composition & Export (ID Card Tool)
    ========================================================================== */
 
-/**
- * Renders the A4 document layout onto a canvas with true physical scale.
- */
 function composeA4Sheet(canvas, dpi, showPlaceholders) {
   const options = getOptions();
   const pxPerMm = dpi / 25.4;
@@ -987,9 +1091,6 @@ function composeA4Sheet(canvas, dpi, showPlaceholders) {
   });
 }
 
-/**
- * Batched preview rendering using requestAnimationFrame.
- */
 function requestPreview() {
   if (previewRafId) cancelAnimationFrame(previewRafId);
   previewRafId = requestAnimationFrame(() => {
@@ -1004,18 +1105,12 @@ function requestPreview() {
   });
 }
 
-/**
- * Creates full 300 DPI canvas export.
- */
 function createExportCanvas() {
   const canvas = document.createElement('canvas');
   composeA4Sheet(canvas, 300, false);
   return canvas;
 }
 
-/**
- * Verifies that at least one card image is loaded before export.
- */
 function hasLoadedCard() {
   if (!SLOT_IDS.some(id => slots[id].img)) {
     alert('Please add at least one card image first.');
@@ -1024,9 +1119,6 @@ function hasLoadedCard() {
   return true;
 }
 
-/**
- * Wraps an async button operation with loading state handling.
- */
 async function executeWithLoading(buttonSelector, actionFn) {
   setButtonBusy(buttonSelector, true);
   await yieldEventLoop();
@@ -1038,7 +1130,7 @@ async function executeWithLoading(buttonSelector, actionFn) {
   setButtonBusy(buttonSelector, false);
 }
 
-// Export button actions
+// Export button actions for ID card tool
 $('#png').addEventListener('click', () => {
   if (hasLoadedCard()) {
     executeWithLoading('#png', async () => {
@@ -1091,7 +1183,6 @@ $('#print').addEventListener('click', () => {
   }
 });
 
-// Sheet configuration input changes
 ['cw', 'gap', 'layout', 'pos', 'round', 'guide'].forEach(inputId => {
   const elem = $('#' + inputId);
   if (elem) elem.addEventListener('input', requestPreview);
@@ -1118,7 +1209,398 @@ window.addEventListener('resize', () => {
 });
 
 /* ==========================================================================
-   9. Shared Utility Functions
+   9. Passport Photo Tool Module
+   ========================================================================== */
+
+const passportSlot = {
+  id: 'passport',
+  el: null,
+  drop: null,
+  fileInput: null,
+  img: null,
+  crop: null,
+  quad: null,
+  srcData: null,
+  persp: false,
+  filter: { mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false },
+  scale: 1,
+  dragMode: null,
+  cv: document.createElement('canvas'),
+  thumb: null
+};
+slots['passport'] = passportSlot;
+
+function initPassportPhotoTool() {
+  passportSlot.el = $('#pp-photo-card');
+  passportSlot.drop = $('#pp-drop');
+  passportSlot.fileInput = $('#pp-file');
+  passportSlot.thumb = $('#pp-thumb-cv');
+
+  if (!passportSlot.drop) return;
+
+  // Upload trigger
+  passportSlot.drop.addEventListener('click', () => passportSlot.fileInput.click());
+  passportSlot.drop.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      passportSlot.fileInput.click();
+    }
+  });
+
+  passportSlot.fileInput.addEventListener('change', () => {
+    if (passportSlot.fileInput.files && passportSlot.fileInput.files[0]) {
+      loadCardImage(passportSlot, passportSlot.fileInput.files[0]);
+    }
+  });
+
+  ['dragover', 'dragenter'].forEach(evt => {
+    passportSlot.drop.addEventListener(evt, e => {
+      e.preventDefault();
+      passportSlot.drop.classList.add('over');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(evt => {
+    passportSlot.drop.addEventListener(evt, e => {
+      e.preventDefault();
+      passportSlot.drop.classList.remove('over');
+    });
+  });
+
+  passportSlot.drop.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      loadCardImage(passportSlot, file);
+    }
+  });
+
+  bindCanvasEvents(passportSlot);
+
+  // Preset selector
+  $('#pp-preset').addEventListener('change', () => {
+    const presetVal = $('#pp-preset').value;
+    if (presetVal !== 'custom' && PASSPORT_PRESETS[presetVal]) {
+      $('#pp-w').value = PASSPORT_PRESETS[presetVal].w;
+      $('#pp-h').value = PASSPORT_PRESETS[presetVal].h;
+    }
+    if (passportSlot.img) {
+      initDefaultCrop(passportSlot);
+      drawPassportThumbnail();
+    }
+    requestPassportPreview();
+  });
+
+  ['pp-w', 'pp-h'].forEach(id => {
+    $('#' + id).addEventListener('input', () => {
+      $('#pp-preset').value = 'custom';
+      if (passportSlot.img) {
+        initDefaultCrop(passportSlot);
+        drawPassportThumbnail();
+      }
+      requestPassportPreview();
+    });
+  });
+
+  // Paper & layout inputs
+  ['pp-paper', 'pp-orient', 'pp-gap', 'pp-margin', 'pp-border', 'pp-border-style'].forEach(id => {
+    const el = $('#' + id);
+    if (el) el.addEventListener('input', requestPassportPreview);
+  });
+
+  $('#pp-count-mode').addEventListener('change', () => {
+    const isCustom = $('#pp-count-mode').value === 'custom';
+    $('#pp-count-wrapper').style.display = isCustom ? 'grid' : 'none';
+    requestPassportPreview();
+  });
+
+  $('#pp-count').addEventListener('input', requestPassportPreview);
+
+  // Adjustments & sliders
+  ['pp-br', 'pp-ct', 'pp-sat', 'pp-sh'].forEach(id => {
+    const key = id.replace('pp-', '');
+    $('#' + id).addEventListener('input', e => {
+      passportSlot.filter[key] = +e.target.value;
+      drawPassportThumbnail();
+      requestPassportPreview();
+      if (previewModalState.isOpen && (previewModalState.target === 'pp-photo' || previewModalState.target === 'pp-sheet')) {
+        renderPreviewCanvas();
+      }
+    });
+  });
+
+  // Mode buttons
+  document.querySelectorAll('#pp-modes button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      passportSlot.filter.mode = btn.dataset.mode;
+      document.querySelectorAll('#pp-modes button').forEach(b =>
+        b.setAttribute('aria-pressed', b.dataset.mode === passportSlot.filter.mode)
+      );
+      drawPassportThumbnail();
+      requestPassportPreview();
+      if (previewModalState.isOpen) renderPreviewCanvas();
+    });
+  });
+
+  // Rotate, flip, reset edits
+  $('#pp-rot-cw').addEventListener('click', () => rotateSlot(passportSlot));
+  $('#pp-flip').addEventListener('click', () => {
+    passportSlot.filter.flip = !passportSlot.filter.flip;
+    drawPassportThumbnail();
+    requestPassportPreview();
+    if (previewModalState.isOpen) renderPreviewCanvas();
+  });
+
+  $('#pp-reset-edits').addEventListener('click', () => {
+    passportSlot.filter = { mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false };
+    ['pp-br', 'pp-ct', 'pp-sat', 'pp-sh'].forEach(id => { $('#' + id).value = 0; });
+    document.querySelectorAll('#pp-modes button').forEach(b =>
+      b.setAttribute('aria-pressed', b.dataset.mode === 'none')
+    );
+    drawPassportThumbnail();
+    requestPassportPreview();
+    if (previewModalState.isOpen) renderPreviewCanvas();
+  });
+
+  // Actions
+  $('#pp-edit-crop').addEventListener('click', () => openModalEditor(passportSlot));
+  $('#pp-crop-btn').addEventListener('click', () => openModalEditor(passportSlot));
+
+  $('#pp-clear-photo').addEventListener('click', () => {
+    passportSlot.img = null;
+    passportSlot.crop = null;
+    passportSlot.fileInput.value = '';
+    $('#pp-editor-box').style.display = 'none';
+    $('#pp-photo-actions').style.display = 'none';
+    passportSlot.drop.style.display = 'grid';
+    requestPassportPreview();
+  });
+
+  // Full-screen triggers
+  $('#pp-fs-photo').addEventListener('click', () => {
+    if (passportSlot.img) openPreviewModal('pp-photo');
+  });
+  $('#pp-preview-btn').addEventListener('click', () => {
+    if (passportSlot.img) openPreviewModal('pp-photo');
+  });
+  $('#pp-thumb-cv').addEventListener('click', () => {
+    if (passportSlot.img) openPreviewModal('pp-photo');
+  });
+
+  $('#pp-fs-sheet').addEventListener('click', () => openPreviewModal('pp-sheet'));
+  $('#pp-sheet').addEventListener('click', () => openPreviewModal('pp-sheet'));
+
+  // Export & Print buttons
+  $('#pp-print').addEventListener('click', printPassportPhotos);
+  $('#pp-pdf').addEventListener('click', exportPassportPdf);
+  $('#pp-jpg').addEventListener('click', exportPassportJpeg);
+  $('#pp-single').addEventListener('click', exportSinglePassportPhoto);
+}
+
+function drawPassportThumbnail() {
+  if (!passportSlot.img) return;
+  const opt = getPassportOptions();
+  const width = 280;
+  const height = Math.round(width / opt.aspectRatio);
+  const rendered = createCardCanvas(passportSlot, width, height);
+
+  const thumbCv = $('#pp-thumb-cv');
+  thumbCv.width = width;
+  thumbCv.height = height;
+  const ctx = thumbCv.getContext('2d');
+  ctx.drawImage(rendered, 0, 0);
+}
+
+/**
+ * Composes multi-photo passport layout onto the target canvas.
+ */
+function composePassportSheet(canvas, dpi, isPreview) {
+  const opt = getPassportOptions();
+  const paper = getPassportPaperDimensions();
+  const px = dpi / 25.4;
+  const W = Math.round(paper.w * px);
+  const H = Math.round(paper.h * px);
+
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  const grid = calculateMaxGridCount(paper.w, paper.h, opt);
+  const maxPhotos = grid.total;
+  const countToDraw = opt.countMode === 'fill' ? maxPhotos : Math.min(opt.customCount, maxPhotos);
+
+  // Update badge summary
+  $('#pp-layout-summary').innerHTML = `<b>${countToDraw} photo${countToDraw !== 1 ? 's' : ''}</b> on ${paper.name}`;
+  $('#pp-dpi-summary').textContent = `${dpi} DPI · ${Math.round(paper.w)} × ${Math.round(paper.h)} mm`;
+
+  if (grid.cols <= 0 || grid.rows <= 0 || countToDraw <= 0) {
+    ctx.fillStyle = '#8a96a1';
+    ctx.font = `${Math.round(20 * (dpi / 100))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Photo size exceeds page margins', W / 2, H / 2);
+    return;
+  }
+
+  const activeCols = Math.min(grid.cols, countToDraw);
+  const activeRows = Math.ceil(countToDraw / grid.cols);
+  const gridW = activeCols * opt.photoWidth + (activeCols - 1) * opt.gap;
+  const gridH = activeRows * opt.photoHeight + (activeRows - 1) * opt.gap;
+  const startX = (paper.w - gridW) / 2;
+  const startY = (paper.h - gridH) / 2;
+
+  let photoCanvas = null;
+  if (passportSlot.img) {
+    const pwPx = Math.round(opt.photoWidth * px);
+    const phPx = Math.round(opt.photoHeight * px);
+    photoCanvas = createCardCanvas(passportSlot, pwPx, phPx);
+  }
+
+  for (let i = 0; i < countToDraw; i++) {
+    const r = Math.floor(i / grid.cols);
+    const c = i % grid.cols;
+    const posX = Math.round((startX + c * (opt.photoWidth + opt.gap)) * px);
+    const posY = Math.round((startY + r * (opt.photoHeight + opt.gap)) * px);
+    const pwPx = Math.round(opt.photoWidth * px);
+    const phPx = Math.round(opt.photoHeight * px);
+
+    if (photoCanvas) {
+      ctx.drawImage(photoCanvas, posX, posY, pwPx, phPx);
+    } else if (isPreview) {
+      ctx.save();
+      ctx.strokeStyle = '#b5bcc3';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(posX, posY, pwPx, phPx);
+      ctx.fillStyle = '#8a96a1';
+      ctx.font = `${Math.round(pwPx / 10)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Passport', posX + pwPx / 2, posY + phPx / 2 - 8);
+      ctx.fillText(`${opt.photoWidth}×${opt.photoHeight}mm`, posX + pwPx / 2, posY + phPx / 2 + 10);
+      ctx.restore();
+    }
+
+    if (opt.hasBorder) {
+      ctx.save();
+      if (opt.borderStyle === 'light') {
+        ctx.strokeStyle = '#b5bcc3';
+        ctx.lineWidth = Math.max(1, 0.3 * px);
+        ctx.strokeRect(posX, posY, pwPx, phPx);
+      } else if (opt.borderStyle === 'black') {
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = Math.max(1, 0.45 * px);
+        ctx.strokeRect(posX, posY, pwPx, phPx);
+      } else if (opt.borderStyle === 'white') {
+        const bPad = 1.2 * px;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = bPad * 2;
+        ctx.strokeRect(posX + bPad, posY + bPad, pwPx - 2 * bPad, phPx - 2 * bPad);
+        ctx.strokeStyle = '#d0d7de';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(posX, posY, pwPx, phPx);
+      }
+      ctx.restore();
+    }
+  }
+}
+
+function requestPassportPreview() {
+  if (passportPreviewRafId) cancelAnimationFrame(passportPreviewRafId);
+  passportPreviewRafId = requestAnimationFrame(() => {
+    composePassportSheet($('#pp-sheet'), 100, true);
+    if (previewModalState.isOpen && previewModalState.target === 'pp-sheet') {
+      renderPreviewCanvas();
+    }
+    passportPreviewRafId = null;
+  });
+}
+
+function printPassportPhotos() {
+  if (!passportSlot.img) {
+    alert('Please upload a passport photo first.');
+    return;
+  }
+  executeWithLoading('#pp-print', async () => {
+    const paper = getPassportPaperDimensions();
+    const c = document.createElement('canvas');
+    composePassportSheet(c, 200, false);
+
+    const printImg = $('#printImg');
+    printImg.src = c.toDataURL('image/jpeg', 0.95);
+    await printImg.decode().catch(() => {});
+
+    let styleEl = $('#print-page-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'print-page-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      @media print {
+        @page { size: ${paper.w}mm ${paper.h}mm; margin: 0; }
+        #printImg { width: ${paper.w}mm !important; height: ${paper.h}mm !important; }
+      }
+    `;
+    window.print();
+  });
+}
+
+function exportPassportPdf() {
+  executeWithLoading('#pp-pdf', async () => {
+    if (!window.jspdf) {
+      alert('The PDF library did not load. Please download as JPEG instead.');
+      return;
+    }
+    const paper = getPassportPaperDimensions();
+    const c = document.createElement('canvas');
+    composePassportSheet(c, 300, false);
+
+    const { jsPDF } = window.jspdf;
+    const orientation = paper.w > paper.h ? 'l' : 'p';
+    const pdf = new jsPDF({
+      unit: 'mm',
+      format: [paper.w, paper.h],
+      orientation,
+      compress: true
+    });
+    pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, paper.w, paper.h, undefined, 'FAST');
+    const blob = pdf.output('blob');
+    saveBlobFile(blob, `passport-photos-${paper.name.replace(/\s+/g, '_')}.pdf`);
+  });
+}
+
+function exportPassportJpeg() {
+  executeWithLoading('#pp-jpg', async () => {
+    const paper = getPassportPaperDimensions();
+    const c = document.createElement('canvas');
+    composePassportSheet(c, 300, false);
+    const blob = await canvasToBlob(c, 'image/jpeg', 0.95);
+    saveBlobFile(blob, `passport-photos-${paper.name.replace(/\s+/g, '_')}.jpg`);
+  });
+}
+
+function exportSinglePassportPhoto() {
+  if (!passportSlot.img) {
+    alert('Please upload a passport photo first.');
+    return;
+  }
+  executeWithLoading('#pp-single', async () => {
+    const opt = getPassportOptions();
+    const px = 300 / 25.4;
+    const w = Math.round(opt.photoWidth * px);
+    const h = Math.round(opt.photoHeight * px);
+    const c = createCardCanvas(passportSlot, w, h);
+    const blob = await canvasToBlob(c, 'image/jpeg', 0.98);
+    saveBlobFile(blob, `passport-photo-${opt.photoWidth}x${opt.photoHeight}mm.jpg`);
+  });
+}
+
+/* ==========================================================================
+   10. Shared Utility Functions
    ========================================================================== */
 
 const formatFileSize = bytes =>
@@ -1416,7 +1898,7 @@ function addDownloadAllButton(container, items, label) {
 }
 
 /* ==========================================================================
-   10. Multi-file Dropzone Initializers
+   11. Multi-file Dropzone Initializers (Convert & Compress)
    ========================================================================== */
 
 const selectedFilesStore = { cv: [], cp: [] };
@@ -1486,7 +1968,7 @@ setupDropzone('cv', true);
 setupDropzone('cp', true);
 
 /* ==========================================================================
-   11. Batch File Conversion Tool
+   12. Batch File Conversion Tool
    ========================================================================== */
 
 $('#cv-go').addEventListener('click', async () => {
@@ -1569,7 +2051,7 @@ $('#cv-go').addEventListener('click', async () => {
 });
 
 /* ==========================================================================
-   12. Batch File Compression Tool
+   13. Batch File Compression Tool
    ========================================================================== */
 
 $('#cp-go').addEventListener('click', async () => {
@@ -1675,7 +2157,7 @@ $('#cp-go').addEventListener('click', async () => {
 });
 
 /* ==========================================================================
-   13. Full-Screen Interactive Crop Editor Modal & Loupe
+   14. Full-Screen Interactive Crop Editor Modal & Loupe
    ========================================================================== */
 
 function mountThumbnail(slot) {
@@ -1737,8 +2219,9 @@ function drawThumbnail(slot) {
 function syncModalHint() {
   const hint = $('#m-hint');
   if (hint) {
-    hint.textContent =
-      'Drag the square corners onto the card corners. Drag the round dots on each edge to resize. Drag inside to move.';
+    hint.textContent = modalState.currentSlot?.id === 'passport'
+      ? 'Drag corners or box to frame your passport photo. Aspect ratio is locked to preset.'
+      : 'Drag the square corners onto the card corners. Drag the round dots on each edge to resize. Drag inside to move.';
   }
 }
 
@@ -1768,7 +2251,11 @@ function openModalEditor(slot) {
     persp: slot.persp
   };
 
-  $('#m-title').textContent = slot.id === 'front' ? 'Front side' : 'Back side';
+  $('#m-title').textContent =
+    slot.id === 'passport'
+      ? 'Passport photo crop'
+      : (slot.id === 'front' ? 'Front side' : 'Back side');
+
   $('#m-stage').replaceChildren(slot.cv);
   $('#editor').hidden = false;
   document.body.classList.add('lock');
@@ -1799,7 +2286,13 @@ function closeModalEditor(commitChanges) {
   slot.cv.style.height = '';
   slot.cv.remove();
 
-  requestPreview();
+  if (slot.id === 'passport') {
+    drawPassportThumbnail();
+    requestPassportPreview();
+  } else {
+    requestPreview();
+  }
+
   if (previewModalState.isOpen) {
     renderPreviewCanvas();
   }
@@ -2201,7 +2694,8 @@ $('#m-reset').addEventListener('click', () => {
     initDefaultCrop(slot);
     syncModalHint();
     fitModalCanvas();
-    requestPreview();
+    if (slot.id === 'passport') requestPassportPreview();
+    else requestPreview();
   }
 });
 
@@ -2209,26 +2703,28 @@ $('#m-cancel').addEventListener('click', () => closeModalEditor(false));
 $('#m-done').addEventListener('click', () => closeModalEditor(true));
 
 /* ==========================================================================
-   14. Full-Screen Card & Sheet Preview Modal
+   15. Full-Screen Card, Photo & Sheet Preview Modal
    ========================================================================== */
 
 /**
- * Opens the full-screen preview modal for high-resolution card inspection or sheet review.
- * @param {'front'|'back'|'a4'} targetId Target view to open.
+ * Opens the full-screen preview modal for high-resolution card or photo inspection.
+ * @param {'front'|'back'|'a4'|'pp-photo'|'pp-sheet'} targetId Target view to open.
  */
 function openPreviewModal(targetId) {
-  if (targetId !== 'a4' && !slots[targetId]?.img) {
-    const otherSide = targetId === 'front' ? 'back' : 'front';
-    if (slots[otherSide]?.img) {
-      targetId = otherSide;
-    } else if (hasLoadedCard()) {
-      targetId = 'a4';
-    } else {
-      alert('Please add at least one card image first.');
-      return;
+  if (targetId === 'front' || targetId === 'back') {
+    if (!slots[targetId]?.img) {
+      const other = targetId === 'front' ? 'back' : 'front';
+      if (slots[other]?.img) targetId = other;
+      else if (hasLoadedCard()) targetId = 'a4';
+      else {
+        alert('Please add at least one card image first.');
+        return;
+      }
     }
-  } else if (targetId === 'a4' && !hasLoadedCard()) {
-    alert('Please add at least one card image first.');
+  } else if (targetId === 'a4') {
+    if (!hasLoadedCard()) return;
+  } else if (targetId === 'pp-photo' && !passportSlot.img) {
+    alert('Please upload a passport photo first.');
     return;
   }
 
@@ -2245,21 +2741,20 @@ function openPreviewModal(targetId) {
   renderPreviewCanvas();
 }
 
-/**
- * Closes the full-screen preview modal.
- */
 function closePreviewModal() {
   previewModalState.isOpen = false;
   $('#card-preview-modal').hidden = true;
   document.body.classList.remove('lock');
 }
 
-/**
- * Switches the active preview target (front card, back card, or A4 sheet).
- */
 function switchPreviewTarget(targetId) {
-  if (targetId !== 'a4' && !slots[targetId]?.img) {
-    alert(`No ${targetId} card image has been added yet.`);
+  if (targetId === 'front' || targetId === 'back') {
+    if (!slots[targetId]?.img) {
+      alert(`No ${targetId} card image has been added yet.`);
+      return;
+    }
+  } else if (targetId === 'pp-photo' && !passportSlot.img) {
+    alert('No passport photo has been uploaded yet.');
     return;
   }
   previewModalState.target = targetId;
@@ -2271,23 +2766,29 @@ function switchPreviewTarget(targetId) {
   renderPreviewCanvas();
 }
 
-/**
- * Updates active state of tabs in the preview header.
- */
 function syncPreviewSideTabs() {
   const current = previewModalState.target;
-  document.querySelectorAll('#pv-side-switcher button').forEach(btn => {
-    const isCurrent = btn.dataset.pv === current;
-    btn.setAttribute('aria-pressed', isCurrent);
-    if (btn.dataset.pv !== 'a4') {
-      btn.style.opacity = slots[btn.dataset.pv]?.img ? '1' : '0.45';
-    }
+  const isPassportMode = current.startsWith('pp-');
+  const switcher = $('#pv-side-switcher');
+
+  if (isPassportMode) {
+    switcher.innerHTML = `
+      <button data-pv="pp-photo" class="pv-tab" aria-pressed="${current === 'pp-photo'}">Passport photo</button>
+      <button data-pv="pp-sheet" class="pv-tab" aria-pressed="${current === 'pp-sheet'}">Print sheet</button>
+    `;
+  } else {
+    switcher.innerHTML = `
+      <button data-pv="front" class="pv-tab" aria-pressed="${current === 'front'}" style="opacity:${slots.front?.img ? '1' : '0.45'}">Front</button>
+      <button data-pv="back" class="pv-tab" aria-pressed="${current === 'back'}" style="opacity:${slots.back?.img ? '1' : '0.45'}">Back</button>
+      <button data-pv="a4" class="pv-tab" aria-pressed="${current === 'a4'}">A4 Sheet</button>
+    `;
+  }
+
+  switcher.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => switchPreviewTarget(btn.dataset.pv));
   });
 }
 
-/**
- * Renders the high-resolution card or A4 sheet into the preview canvas.
- */
 function renderPreviewCanvas() {
   const target = previewModalState.target;
   const pvCanvas = $('#pv-canvas');
@@ -2300,7 +2801,6 @@ function renderPreviewCanvas() {
     const slot = slots[target];
     if (!slot || !slot.img) return;
 
-    // Render high-resolution view of the card
     const width = Math.min(2400, Math.max(1200, slot.img.width || 1600));
     const height = Math.max(50, Math.round(width / calculateAspectRatio(slot, getOptions())));
     const rendered = createCardCanvas(slot, width, height);
@@ -2314,21 +2814,41 @@ function renderPreviewCanvas() {
     subtitleEl.textContent = 'High resolution inspection view';
     dimEl.textContent = `Physical card scale: 85.6 × 54.0 mm · ${width} × ${height} px`;
     editCropBtn.style.display = 'inline-block';
-  } else {
-    // Render full A4 sheet at 200 DPI
+  } else if (target === 'a4') {
     composeA4Sheet(pvCanvas, 200, false);
     titleEl.textContent = 'A4 Sheet — Full Screen Preview';
     subtitleEl.textContent = 'True 100% scale A4 printable layout';
     dimEl.textContent = `Standard A4 (210 × 297 mm) · ${pvCanvas.width} × ${pvCanvas.height} px`;
+    editCropBtn.style.display = 'none';
+  } else if (target === 'pp-photo') {
+    const opt = getPassportOptions();
+    if (!passportSlot.img) return;
+
+    const width = 1200;
+    const height = Math.round(width / opt.aspectRatio);
+    const rendered = createCardCanvas(passportSlot, width, height);
+
+    pvCanvas.width = width;
+    pvCanvas.height = height;
+    const ctx = pvCanvas.getContext('2d');
+    ctx.drawImage(rendered, 0, 0);
+
+    titleEl.textContent = `Passport Photo (${opt.photoWidth} × ${opt.photoHeight} mm) — Full Screen Preview`;
+    subtitleEl.textContent = 'High resolution single photo crop';
+    dimEl.textContent = `Physical dimensions: ${opt.photoWidth} × ${opt.photoHeight} mm · 300 DPI`;
+    editCropBtn.style.display = 'inline-block';
+  } else if (target === 'pp-sheet') {
+    composePassportSheet(pvCanvas, 200, false);
+    const paper = getPassportPaperDimensions();
+    titleEl.textContent = `Passport Print Sheet (${paper.name}) — Full Screen Preview`;
+    subtitleEl.textContent = 'Physical layout preview with borders';
+    dimEl.textContent = `Paper size: ${paper.name} (${Math.round(paper.w)} × ${Math.round(paper.h)} mm)`;
     editCropBtn.style.display = 'none';
   }
 
   applyPreviewTransform();
 }
 
-/**
- * Applies current zoom and pan translation to the preview stage container.
- */
 function applyPreviewTransform() {
   const inner = $('#pv-stage-inner');
   if (!inner) return;
@@ -2336,9 +2856,6 @@ function applyPreviewTransform() {
   $('#pv-zoom-level').textContent = `${Math.round(previewModalState.zoom * 100)}%`;
 }
 
-/**
- * Sets preview zoom level between 40% and 400%.
- */
 function setPreviewZoom(zoomVal) {
   previewModalState.zoom = Math.max(0.4, Math.min(4.0, zoomVal));
   if (previewModalState.zoom <= 1) {
@@ -2355,17 +2872,10 @@ function resetPreviewZoom() {
   applyPreviewTransform();
 }
 
-// Side switcher buttons
-document.querySelectorAll('#pv-side-switcher button').forEach(btn => {
-  btn.addEventListener('click', () => switchPreviewTarget(btn.dataset.pv));
-});
-
-// Zoom controls
 $('#pv-zoom-in').addEventListener('click', () => setPreviewZoom(previewModalState.zoom * 1.25));
 $('#pv-zoom-out').addEventListener('click', () => setPreviewZoom(previewModalState.zoom / 1.25));
 $('#pv-zoom-fit').addEventListener('click', resetPreviewZoom);
 
-// Mouse wheel zoom on preview stage
 $('#pv-stage').addEventListener('wheel', e => {
   if (!previewModalState.isOpen) return;
   e.preventDefault();
@@ -2373,7 +2883,6 @@ $('#pv-stage').addEventListener('wheel', e => {
   setPreviewZoom(previewModalState.zoom * delta);
 }, { passive: false });
 
-// Pan gesture dragging on preview stage
 const pvStage = $('#pv-stage');
 const pvInner = $('#pv-stage-inner');
 
@@ -2404,14 +2913,15 @@ const stopPanning = () => {
 pvStage.addEventListener('pointerup', stopPanning);
 pvStage.addEventListener('pointercancel', stopPanning);
 
-// Modal action buttons
 $('#pv-close').addEventListener('click', closePreviewModal);
 $('#pv-done').addEventListener('click', closePreviewModal);
 
 $('#pv-edit-crop').addEventListener('click', () => {
   const target = previewModalState.target;
   closePreviewModal();
-  if (slots[target]) {
+  if (target === 'pp-photo') {
+    openModalEditor(passportSlot);
+  } else if (slots[target]) {
     openModalEditor(slots[target]);
   }
 });
@@ -2426,14 +2936,17 @@ $('#pv-download').addEventListener('click', async () => {
     const canvas = createCardCanvas(slot, width, height);
     const blob = await canvasToBlob(canvas, 'image/png');
     saveBlobFile(blob, `id-card-${target}.png`);
-  } else {
+  } else if (target === 'a4') {
     const canvas = createExportCanvas();
     const blob = await canvasToBlob(canvas, 'image/png');
     saveBlobFile(blob, 'id-card-a4-preview.png');
+  } else if (target === 'pp-photo') {
+    exportSinglePassportPhoto();
+  } else if (target === 'pp-sheet') {
+    exportPassportJpeg();
   }
 });
 
-// Global keyboard listeners for modals
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (previewModalState.isOpen) {
@@ -2456,34 +2969,29 @@ window.addEventListener('keydown', e => {
     } else if (e.key === '0') {
       e.preventDefault();
       resetPreviewZoom();
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      const sides = ['front', 'back', 'a4'].filter(id => id === 'a4' || slots[id]?.img);
-      const currentIndex = sides.indexOf(previewModalState.target);
-      if (currentIndex >= 0 && sides.length > 1) {
-        const nextIndex =
-          e.key === 'ArrowRight'
-            ? (currentIndex + 1) % sides.length
-            : (currentIndex - 1 + sides.length) % sides.length;
-        switchPreviewTarget(sides[nextIndex]);
-      }
     }
   }
 });
 
 /* ==========================================================================
-   15. Hash-based SPA Router & Navigation
+   16. Hash-based SPA Router & Navigation
    ========================================================================== */
 
-const APP_PAGES = ['home', 'a4', 'convert', 'compress'];
+const APP_PAGES = ['home', 'a4', 'passport', 'convert', 'compress'];
 const ROUTE_ALIASES = {
   'a4-id': 'a4',
   id: 'a4',
+  passport: 'passport',
+  'passport-photo': 'passport',
+  passports: 'passport',
+  photo: 'passport',
   home: 'home',
   '': 'home'
 };
 const PAGE_TITLES = {
   home: 'Card & File Tools — Free & Private In-Browser Tools',
   a4: 'ID Card to A4 — Fit & Print ID Cards',
+  passport: 'Passport Size Photo Maker — Print on A4, 4×6, 5×7',
   convert: 'Convert Files — PDF & Image Converter',
   compress: 'Compress Files — Target Size Optimizer'
 };
@@ -2506,11 +3014,18 @@ function handleRouteChange() {
     SLOT_IDS.forEach(id => slots[id].img && drawCropCanvas(slots[id]));
     fitModalCanvas();
     requestPreview();
+  } else if (activePage === 'passport') {
+    if (passportSlot.img) {
+      drawPassportThumbnail();
+    }
+    requestPassportPreview();
   }
 }
 
 window.addEventListener('hashchange', handleRouteChange);
 
-// Initial application boot
+// Initialize application modules
+initPassportPhotoTool();
 handleRouteChange();
 requestPreview();
+requestPassportPreview();

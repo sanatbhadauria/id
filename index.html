@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Free, private, browser-based identity card and document tools: ID card to A4 printing, PDF/image conversions, and file size compressor.">
+  <meta name="description" content="Free, private, browser-based identity card, passport photo and document tools: ID card to A4 printing, passport size photo grids, PDF/image conversions, and file size compressor.">
   <meta name="theme-color" content="#0d1b24">
   <title>Card &amp; File Tools — Free &amp; Private In-Browser Tools</title>
 
@@ -40,6 +40,7 @@
       <nav class="tabs" aria-label="Tools navigation">
         <a href="#home" data-tab="home">Home</a>
         <a href="#a4-id" data-tab="a4">ID card to A4</a>
+        <a href="#passport" data-tab="passport">Passport photos</a>
         <a href="#convert" data-tab="convert">Convert</a>
         <a href="#compress" data-tab="compress">Compress</a>
       </nav>
@@ -57,8 +58,8 @@
         </svg>
         Private &amp; Client-Side &bull; No Server Uploads
       </div>
-      <h1>Card &amp; Document Tools</h1>
-      <p>Fast, reliable tools for your ID cards and documents. Everything processes securely in your browser without leaving your device.</p>
+      <h1>Card, Photo &amp; Document Tools</h1>
+      <p>Fast, reliable tools for ID cards, passport photos, and documents. Everything processes securely in your browser without leaving your device.</p>
     </div>
 
     <!-- Tools Grid -->
@@ -102,7 +103,45 @@
         </div>
       </a>
 
-      <!-- Tool 2: Convert Files -->
+      <!-- Tool 2: Passport Photos -->
+      <a href="#passport" class="tool-card">
+        <div class="tool-card-head">
+          <div class="tool-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M7 21v-2a5 5 0 0 1 10 0v2"/>
+            </svg>
+          </div>
+          <span class="tool-tag featured">New</span>
+        </div>
+        <h2>Passport Photos</h2>
+        <p class="tool-desc">Print multiple passport and visa photos on 4×6" (4R), 5×7", A4, or Letter paper. Customize photo size, borders, count, and filters.</p>
+        <ul class="tool-features">
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Standard sizes: 35×45 mm, 2×2", 30×40 mm, or custom
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Print on 4×6" (4R photo paper), 5×7", A4, A5, and Letter
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Fill page or choose exact number of photos
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Cutting borders, B&amp;W/Doc filters, brightness &amp; contrast
+          </li>
+        </ul>
+        <div class="tool-action">
+          <span>Open passport photo tool</span>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Tool 3: Convert Files -->
       <a href="#convert" class="tool-card">
         <div class="tool-card-head">
           <div class="tool-icon-wrap">
@@ -139,7 +178,7 @@
         </div>
       </a>
 
-      <!-- Tool 3: Compress Files -->
+      <!-- Tool 4: Compress Files -->
       <a href="#compress" class="tool-card">
         <div class="tool-card-head">
           <div class="tool-icon-wrap">
@@ -327,7 +366,182 @@
   </main>
 
   <!-- =========================================================================
-       PAGE 3: Convert Files (#convert)
+       PAGE 3: Passport Size Photo Maker (#passport)
+       ========================================================================= -->
+  <main id="p-passport" hidden>
+    <div class="tool-crumb">
+      <a href="#home">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All tools
+      </a>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-cur">Passport size photos</span>
+    </div>
+
+    <!-- Controls Column -->
+    <div class="col">
+      <!-- Card 1: Photo Upload & Size -->
+      <section class="card" id="pp-photo-card">
+        <h2>
+          Photo setup
+          <span class="row no-margin" id="pp-photo-actions" style="display:none;">
+            <button id="pp-fs-photo" title="View photo full screen">Full screen</button>
+            <button id="pp-edit-crop" class="primary" title="Adjust photo crop">Edit crop</button>
+            <button id="pp-clear-photo" title="Remove photo">Remove</button>
+          </span>
+        </h2>
+
+        <!-- Upload Dropzone -->
+        <div class="drop" id="pp-drop" tabindex="0" role="button" aria-label="Choose passport photo">
+          <div>
+            <b>Drop your photo here</b>
+            or click to choose a file (JPG, PNG, WebP)
+          </div>
+        </div>
+        <input type="file" id="pp-file" accept="image/*" hidden>
+
+        <!-- Uploaded Photo Thumbnail preview -->
+        <div class="editor" id="pp-editor-box">
+          <canvas id="pp-thumb-cv" class="thumb" title="Click to preview full screen" style="cursor:pointer;"></canvas>
+          <div class="row" style="justify-content:center;gap:8px;margin-top:10px;">
+            <button id="pp-crop-btn" class="primary" type="button">Edit crop</button>
+            <button id="pp-preview-btn" class="btn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>Full screen
+            </button>
+          </div>
+        </div>
+
+        <div class="controls" style="margin-top:14px;">
+          <label style="grid-column:1/-1;">Photo size preset
+            <select id="pp-preset">
+              <option value="35x45" selected>35 × 45 mm (Standard Passport / UK / Schengen / India)</option>
+              <option value="51x51">51 × 51 mm / 2 × 2 inches (US Visa &amp; Passport / India OCI)</option>
+              <option value="35x35">35 × 35 mm (Square ID Photo)</option>
+              <option value="30x40">30 × 40 mm (ID / Transit Photo)</option>
+              <option value="33x48">33 × 48 mm (China Visa)</option>
+              <option value="50x70">50 × 70 mm (Canada Passport)</option>
+              <option value="custom">Custom size (enter width &amp; height in mm)</option>
+            </select>
+          </label>
+          <label>Photo width (mm)
+            <input id="pp-w" type="number" min="15" max="150" step="0.5" value="35">
+          </label>
+          <label>Photo height (mm)
+            <input id="pp-h" type="number" min="15" max="150" step="0.5" value="45">
+          </label>
+        </div>
+      </section>
+
+      <!-- Card 2: Photo Adjustments & Enhancements -->
+      <section class="card" id="pp-adjust">
+        <h2>Photo adjustments</h2>
+        <div class="row no-margin" id="pp-modes">
+          <span>Mode</span>
+          <button data-mode="none" aria-pressed="true">Original</button>
+          <button data-mode="bw" aria-pressed="false">Black &amp; white</button>
+          <button data-mode="doc" aria-pressed="false">Document / Crisp</button>
+        </div>
+        <div class="sliders">
+          <label>Brightness<input id="pp-br" type="range" min="-100" max="100" value="0"></label>
+          <label>Contrast<input id="pp-ct" type="range" min="-100" max="100" value="0"></label>
+          <label>Colour<input id="pp-sat" type="range" min="-100" max="100" value="0"></label>
+          <label>Sharpen<input id="pp-sh" type="range" min="0" max="100" value="0"></label>
+        </div>
+        <div class="row">
+          <button id="pp-rot-cw">Rotate 90°</button>
+          <button id="pp-flip">Flip horizontally</button>
+          <button id="pp-reset-edits">Reset edits</button>
+        </div>
+        <p class="hint">Adjust brightness, contrast, and sharpness for compliant passport photo results.</p>
+      </section>
+
+      <!-- Card 3: Page & Print Settings -->
+      <section class="card">
+        <h2>Page &amp; layout options</h2>
+        <div class="controls">
+          <label>Page paper size
+            <select id="pp-paper">
+              <option value="4x6" selected>4 × 6 inches / 10 × 15 cm (4R Photo Paper)</option>
+              <option value="a4">A4 (210 × 297 mm)</option>
+              <option value="5x7">5 × 7 inches / 13 × 18 cm (5R Photo Paper)</option>
+              <option value="a5">A5 (148 × 210 mm)</option>
+              <option value="letter">US Letter (8.5 × 11 inches)</option>
+            </select>
+          </label>
+          <label>Page orientation
+            <select id="pp-orient">
+              <option value="auto" selected>Auto (Best photo fit)</option>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </label>
+          <label>Number of photos
+            <select id="pp-count-mode">
+              <option value="fill" selected>Fill page (Maximum fit)</option>
+              <option value="custom">Specific number of photos</option>
+            </select>
+          </label>
+          <label id="pp-count-wrapper" style="display:none;">Photos to print
+            <input id="pp-count" type="number" min="1" max="60" value="8">
+          </label>
+          <label>Spacing between photos (mm)
+            <input id="pp-gap" type="number" min="0" max="25" step="0.5" value="2.5">
+          </label>
+          <label>Page margins (mm)
+            <input id="pp-margin" type="number" min="0" max="30" step="1" value="5">
+          </label>
+          <label class="check">
+            <input id="pp-border" type="checkbox" checked>
+            Draw cutting borders around photos
+          </label>
+          <label id="pp-border-style-wrap">Border line style
+            <select id="pp-border-style">
+              <option value="light" selected>Thin light gray guide (0.5 mm)</option>
+              <option value="black">Solid black line</option>
+              <option value="white">White border / padding (1.5 mm)</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <!-- Live Print Preview Sidebar -->
+    <aside class="side card">
+      <h2>
+        Print preview
+        <button id="pp-fs-sheet" class="btn" title="View sheet in full screen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>Full screen
+        </button>
+      </h2>
+      <canvas id="pp-sheet" class="paper-sheet" title="Click to view full screen preview" style="cursor:pointer;"></canvas>
+
+      <div class="sheet-info-badge" id="pp-sheet-badge">
+        <span id="pp-layout-summary"><b>0 photos</b> on 4 × 6 inch</span>
+        <span id="pp-dpi-summary">300 DPI</span>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="pp-print">Print photos</button>
+        <button id="pp-pdf">Download PDF</button>
+        <button id="pp-jpg">Download JPEG (Sheet)</button>
+        <button id="pp-single">Download Single Photo (300 DPI)</button>
+      </div>
+      <p class="hint">Print on glossy photo paper at 100% scale (disable "Fit to printable area" in print settings) for exact physical photo dimensions.</p>
+    </aside>
+  </main>
+
+  <!-- =========================================================================
+       PAGE 4: Convert Files (#convert)
        ========================================================================= -->
   <main id="p-convert" class="single" hidden>
     <div class="tool-crumb">
@@ -382,7 +596,7 @@
   </main>
 
   <!-- =========================================================================
-       PAGE 4: Compress Files (#compress)
+       PAGE 5: Compress Files (#compress)
        ========================================================================= -->
   <main id="p-compress" class="single" hidden>
     <div class="tool-crumb">
@@ -448,7 +662,7 @@
   <div id="card-preview-modal" class="modal preview-modal" role="dialog" aria-modal="true" aria-label="Full screen preview" hidden>
     <div class="m-top">
       <div class="preview-title-group">
-        <b id="pv-title">Front side — Full screen preview</b>
+        <b id="pv-title">Full screen preview</b>
         <span class="preview-subtitle" id="pv-subtitle">High resolution view</span>
       </div>
       <div class="seg" id="pv-side-switcher">
@@ -477,7 +691,7 @@
     </div>
     <div class="m-bot">
       <div class="pv-info">
-        <span id="pv-dimensions">85.6 × 54 mm (Physical Scale)</span>
+        <span id="pv-dimensions">Dimensions</span>
       </div>
       <div class="actions pv-actions">
         <button id="pv-edit-crop" class="btn">Edit crop</button>
@@ -488,7 +702,7 @@
   </div>
 
   <!-- Hidden print area for browser print engine -->
-  <div id="printArea" aria-hidden="true"><img id="printImg" alt="A4 page to print"></div>
+  <div id="printArea" aria-hidden="true"><img id="printImg" alt="Page to print"></div>
 
   <!-- Third-party Client-Side Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
