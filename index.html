@@ -1,1082 +1,443 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Card &amp; File Tools — Free &amp; Private In-Browser Tools</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#e8ecef;--panel:#fff;--ink:#16202b;--muted:#5d6b78;--line:#cfd7de;--accent:#0b6e63;--accent-ink:#fff;--page:#fff;--shadow:0 1px 2px rgba(22,32,43,.12),0 12px 32px rgba(22,32,43,.12);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161c;--panel:#192129;--ink:#e8eef3;--muted:#93a3b1;--line:#2b3742;--accent:#3cc2b0;--accent-ink:#06211d;--page:#fff;--shadow:0 12px 32px rgba(0,0,0,.5);color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#10161c;--panel:#192129;--ink:#e8eef3;--muted:#93a3b1;--line:#2b3742;--accent:#3cc2b0;--accent-ink:#06211d;--page:#fff;--shadow:0 12px 32px rgba(0,0,0,.5);color-scheme:dark}
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif}
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:linear-gradient(135deg,#0d1b24,#12303a);color:#eef4f7;border-bottom:1px solid rgba(255,255,255,.08)}
-.bar-in{max-width:1200px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}
-.brand svg{width:40px;height:40px;flex:none}
-.brand b{display:block;font-size:19px;line-height:1.15;letter-spacing:-.01em}
-.brand small{display:block;font-size:13px;color:#9fb6c2}
-main{max-width:1200px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:24px;align-items:start}
-@media (max-width:900px){main{grid-template-columns:1fr}}
-.col{display:grid;gap:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
-.card h2{margin:0 0 10px;font-size:18px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.drop{display:grid;place-items:center;text-align:center;min-height:170px;border:2px dashed var(--line);border-radius:8px;color:var(--muted);cursor:pointer;padding:16px}
-.drop:hover,.drop.over,.drop:focus-visible{border-color:var(--accent);color:var(--ink);outline:none}
-.drop b{display:block;color:var(--ink);font-size:17px}
-.editor{display:none}
-.thumb{display:block;max-width:100%;max-height:240px;width:auto;height:auto;margin:0 auto;border-radius:8px;border:1px solid var(--line);cursor:pointer}
-.editor>.hint,[data-slot] h2 [data-act=persp],[data-slot] h2 [data-act=rot]{display:none}
-.modal{position:fixed;inset:0;height:100vh;height:100dvh;z-index:50;background:#0b1217;color:#eef4f7;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.m-top,.m-bot{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 14px;background:#12202b}
-.m-top b{margin-right:auto}
-.m-bot{justify-content:space-between}
-.m-bot>div{display:flex;gap:8px}
-.m-hint{font-size:14px;color:#9fb6c2;flex:1 1 200px}
-.m-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
-.m-stage canvas{flex:none;touch-action:none;background:#000;border-radius:4px}
-.seg{display:flex;gap:4px}
-.modal button{background:#1c2f3b;color:#eef4f7;border-color:#2f4756}
-.modal button.primary{background:#3cc2b0;color:#06211d;border-color:#3cc2b0}
-.modal button[aria-pressed=true]{background:#fff;color:#10202b;border-color:#fff}
-body.lock{overflow:hidden}
-#loupe{position:fixed;width:150px;height:150px;border-radius:50%;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:60;pointer-events:none;background:#000}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
-button,.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-button.primary,button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.hint{color:var(--muted);font-size:14px;margin:8px 0 0}
-.side{position:sticky;top:calc(72px + env(safe-area-inset-top,0px))}
-@media (min-width:901px){.side{max-height:calc(100vh - 84px);overflow:auto}}
-@media (max-width:900px){.side{position:static}}
-.sheet{background:var(--page);box-shadow:var(--shadow);border-radius:2px;width:100%;aspect-ratio:210/297;display:block}
-.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px}
-label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
-label.check{display:flex;align-items:center;gap:8px;color:var(--ink);grid-column:1/-1}
-input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.actions button{flex:1 1 140px}
-.adj{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
-.adj summary{cursor:pointer;font-weight:700}
-.sliders{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:10px 0 0}
-.sliders input{width:100%;accent-color:var(--accent)}
-[hidden]{display:none!important}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:#0d1b24;z-index:12}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;background:rgba(255,255,255,.08);padding:4px;border-radius:12px}
-nav.tabs a{padding:8px 14px;border-radius:9px;color:#cfe0e8;text-decoration:none;font-weight:500;white-space:nowrap;min-height:40px;display:flex;align-items:center}
-nav.tabs a:hover{color:#fff}
-nav.tabs a:focus-visible{outline:3px solid #3cc2b0;outline-offset:2px}
-nav.tabs a[aria-selected=true]{background:#fff;color:#10202b}
-main.single{grid-template-columns:1fr;max-width:760px}
-.res{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
-.note{color:var(--muted);font-size:14px;margin:10px 0 0;min-height:1.4em}
-button:disabled{opacity:.6;cursor:progress}
-#printArea{display:none}
-@media print{
-  @page{size:A4;margin:0}
-  :root{padding:0}
-  body{background:#fff}
-  body::before{display:none}
-  body>*:not(#printArea){display:none!important}
-  #printArea{display:block}
-  #printImg{display:block;width:210mm;height:297mm}
-}
-/* Breadcrumbs */
-.tool-crumb{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:4px}
-.tool-crumb a{color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:500;padding:5px 10px;border-radius:6px;background:var(--panel);border:1px solid var(--line);transition:border-color .15s,color .15s}
-.tool-crumb a:hover{color:var(--ink);border-color:var(--accent)}
-.tool-crumb .crumb-sep{opacity:.4}
-.tool-crumb .crumb-cur{color:var(--ink);font-weight:600}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Free, private, browser-based identity card and document tools: ID card to A4 printing, PDF/image conversions, and file size compressor.">
+  <meta name="theme-color" content="#0d1b24">
+  <title>Card &amp; File Tools — Free &amp; Private In-Browser Tools</title>
 
-/* Home Page */
-#p-home{max-width:1200px;margin:0 auto;padding:28px 20px 60px;display:block}
-.hero{text-align:center;max-width:780px;margin:0 auto 36px}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(11,110,99,.12);color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin-bottom:16px}
-:root[data-theme="dark"] .hero-badge{background:rgba(60,194,176,.15)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero-badge{background:rgba(60,194,176,.15)}}
-.hero h1{font-size:clamp(28px,4.5vw,44px);font-weight:700;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;color:var(--ink)}
-.hero p{font-size:clamp(16px,2vw,18px);line-height:1.6;color:var(--muted);margin:0 auto;max-width:660px}
-.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:24px;margin-bottom:44px}
-.tool-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;text-decoration:none;color:inherit}
-.tool-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
-.tool-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
-.tool-icon-wrap{width:52px;height:52px;border-radius:12px;background:rgba(11,110,99,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-:root[data-theme="dark"] .tool-icon-wrap{background:rgba(60,194,176,.14)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tool-icon-wrap{background:rgba(60,194,176,.14)}}
-.tool-tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
-.tool-tag.featured{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.tool-card h2{font-size:21px;font-weight:700;margin:0 0 10px;color:var(--ink)}
-.tool-desc{font-size:15px;line-height:1.55;color:var(--muted);margin:0 0 20px;flex:1}
-.tool-features{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:10px}
-.tool-features li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink)}
-.tool-features li svg{flex-shrink:0;color:var(--accent)}
-.tool-action{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--line);font-weight:600;font-size:15px;color:var(--accent)}
-.tool-action .arrow{transition:transform .2s ease}
-.tool-card:hover .tool-action .arrow{transform:translateX(5px)}
-.features-section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:32px 28px;margin-bottom:36px}
-.features-title{text-align:center;margin:0 0 28px}
-.features-title h3{font-size:20px;font-weight:700;margin:0 0 6px;color:var(--ink)}
-.features-title p{color:var(--muted);font-size:14px;margin:0}
-.features-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
-.feature-box{display:flex;gap:16px}
-.feature-box-icon{width:42px;height:42px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
-.feature-box h4{margin:0 0 6px;font-size:16px;font-weight:700;color:var(--ink)}
-.feature-box p{margin:0;font-size:14px;line-height:1.5;color:var(--muted)}
-.home-footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px;border-top:1px solid var(--line)}
+  <!-- Google Fonts: Familjen Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 
-@media (max-width:600px){
-  .bar{position:static}
-  .bar-in{padding:10px 14px}
-  .brand small{display:none}
-  nav.tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  nav.tabs a{flex:0 0 auto;min-height:40px;padding:6px 12px;font-size:14px}
-  #p-home{padding:20px 14px 40px}
-  .hero{margin-bottom:24px}
-  .hero-badge{font-size:11px;padding:4px 10px}
-  .tool-grid{grid-template-columns:1fr;gap:16px;margin-bottom:28px}
-  .tool-card{padding:20px}
-  .features-section{padding:22px 16px}
-  .features-row{grid-template-columns:1fr;gap:18px}
-  main{padding:12px 14px 32px;gap:16px}
-  .card{padding:12px}
-  button,.btn{min-height:44px;padding:10px 14px}
-  input[type=number],select{font-size:16px;min-height:44px}
-  .sliders{grid-template-columns:1fr}
-  .sliders input{height:30px}
-  .drop{min-height:140px}
-  .card h2{flex-wrap:wrap}
-}
-</style>
+  <!-- Modular Stylesheet -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="bar">
-  <div class="bar-in">
-    <a class="brand" href="#home">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="8" width="36" height="24" rx="5" fill="#3cc2b0"/><circle cx="13" cy="18" r="4" fill="#10202b"/><path d="M7 27c1-4 5-5 6-5s5 1 6 5z" fill="#10202b"/><rect x="23" y="15" width="11" height="2.5" rx="1.2" fill="#10202b"/><rect x="23" y="21" width="8" height="2.5" rx="1.2" fill="#10202b"/></svg>
-      <span><b>Card and file tools</b><small>Private. Everything runs in your browser.</small></span>
-    </a>
-    <nav class="tabs" aria-label="Tools">
-      <a href="#home" data-tab="home">Home</a>
-      <a href="#a4-id" data-tab="a4">ID card to A4</a>
-      <a href="#convert" data-tab="convert">Convert</a>
-      <a href="#compress" data-tab="compress">Compress</a>
-    </nav>
-  </div>
-</header>
-<main id="p-home">
-  <div class="hero">
-    <div class="hero-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Private &amp; Client-Side &bull; No Server Uploads
+
+  <!-- =========================================================================
+       Application Header & Navigation
+       ========================================================================= -->
+  <header class="bar">
+    <div class="bar-in">
+      <a class="brand" href="#home" aria-label="Go to Home Page">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="2" y="8" width="36" height="24" rx="5" fill="#3cc2b0"/>
+          <circle cx="13" cy="18" r="4" fill="#10202b"/>
+          <path d="M7 27c1-4 5-5 6-5s5 1 6 5z" fill="#10202b"/>
+          <rect x="23" y="15" width="11" height="2.5" rx="1.2" fill="#10202b"/>
+          <rect x="23" y="21" width="8" height="2.5" rx="1.2" fill="#10202b"/>
+        </svg>
+        <span>
+          <b>Card and file tools</b>
+          <small>Private. Everything runs in your browser.</small>
+        </span>
+      </a>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="tabs" aria-label="Tools navigation">
+        <a href="#home" data-tab="home">Home</a>
+        <a href="#a4-id" data-tab="a4">ID card to A4</a>
+        <a href="#convert" data-tab="convert">Convert</a>
+        <a href="#compress" data-tab="compress">Compress</a>
+      </nav>
     </div>
-    <h1>Card &amp; Document Tools</h1>
-    <p>Fast, reliable tools for your ID cards and documents. Everything processes securely in your browser without leaving your device.</p>
-  </div>
+  </header>
 
-  <div class="tool-grid">
-    <a href="#a4-id" class="tool-card">
-      <div class="tool-card-head">
-        <div class="tool-icon-wrap">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <rect x="6" y="6" width="12" height="6" rx="1"/>
-            <line x1="6" y1="15" x2="11" y2="15"/>
-            <line x1="6" y1="18" x2="18" y2="18"/>
-          </svg>
-        </div>
-        <span class="tool-tag featured">Popular</span>
+  <!-- =========================================================================
+       PAGE 1: Home Dashboard (#home)
+       ========================================================================= -->
+  <main id="p-home">
+    <div class="hero">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Private &amp; Client-Side &bull; No Server Uploads
       </div>
-      <h2>ID card to A4</h2>
-      <p class="tool-desc">Place front and back ID photos onto a single A4 page with true physical dimensions (85.6 × 54 mm), ready to print or save.</p>
-      <ul class="tool-features">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 4-corner perspective crop &amp; auto detection</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Accurate 100% scale A4 layout &amp; cut guides</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> B&amp;W, document filter, brightness &amp; contrast</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Print directly or export as PDF, JPEG, or PNG</li>
-      </ul>
-      <div class="tool-action">
-        <span>Open ID card tool</span>
-        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="#convert" class="tool-card">
-      <div class="tool-card-head">
-        <div class="tool-icon-wrap">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 16V4M7 4L3 8M7 4l4 4"/>
-            <path d="M17 8v12M17 20l4-4M17 20l-4-4"/>
-          </svg>
-        </div>
-        <span class="tool-tag">Batch tool</span>
-      </div>
-      <h2>Convert Files</h2>
-      <p class="tool-desc">Seamlessly switch between PDF and image formats with customizable resolution, DPI, and quality parameters.</p>
-      <ul class="tool-features">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Convert multi-page PDF files into JPG images</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Compile JPG, PNG, and WebP into one PDF</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Selectable DPI (100, 150, 200, 300)</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Choose A4 page fit or original image aspect</li>
-      </ul>
-      <div class="tool-action">
-        <span>Open file converter</span>
-        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="#compress" class="tool-card">
-      <div class="tool-card-head">
-        <div class="tool-icon-wrap">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="4 14 10 14 10 20"/>
-            <polyline points="20 10 14 10 14 4"/>
-            <line x1="14" y1="10" x2="21" y2="3"/>
-            <line x1="3" y1="21" x2="10" y2="14"/>
-          </svg>
-        </div>
-        <span class="tool-tag">Batch &amp; Target size</span>
-      </div>
-      <h2>Compress Files</h2>
-      <p class="tool-desc">Batch reduce multiple PDF and image files to meet strict upload size limits (e.g. 100 KB, 200 KB) required by application portals.</p>
-      <ul class="tool-features">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Batch compress multiple files in one run</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Specify exact target file size in KB</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Intelligent multi-pass optimization</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Download individually or all at once</li>
-      </ul>
-      <div class="tool-action">
-        <span>Open file compressor</span>
-        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-  </div>
-
-  <section class="features-section">
-    <div class="features-title">
-      <h3>Why use these tools?</h3>
-      <p>Designed for privacy, speed, and standard document workflows</p>
+      <h1>Card &amp; Document Tools</h1>
+      <p>Fast, reliable tools for your ID cards and documents. Everything processes securely in your browser without leaving your device.</p>
     </div>
-    <div class="features-row">
-      <div class="feature-box">
-        <div class="feature-box-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div>
-          <h4>100% Private</h4>
-          <p>Files never leave your computer. Processing happens entirely in your local browser sandbox.</p>
-        </div>
-      </div>
-      <div class="feature-box">
-        <div class="feature-box-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <div>
-          <h4>Instant &amp; Free</h4>
-          <p>No waiting queues, file uploads, subscriptions, or watermarks. Works at device speed.</p>
-        </div>
-      </div>
-      <div class="feature-box">
-        <div class="feature-box-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        </div>
-        <div>
-          <h4>Print &amp; Portal Ready</h4>
-          <p>Built-in millimeter precision for physical printing and strict KB targeting for online forms.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <footer class="home-footer">
-    <p>Card &amp; File Tools &bull; Single-page static app &bull; Zero remote servers</p>
-  </footer>
-</main>
-<main id="p-a4" hidden>
-  <div class="tool-crumb">
-    <a href="#home">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      All tools
-    </a>
-    <span class="crumb-sep">/</span>
-    <span class="crumb-cur">ID card to A4</span>
-  </div>
-  <div class="col">
-    <section class="card" data-slot="front">
-      <h2>Front side <span class="row" style="margin:0"><button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button><button data-act="rot">Rotate 90°</button><button data-act="clear">Remove</button></span></h2>
-      <div class="drop" tabindex="0" role="button" aria-label="Choose front image"><div><b>Drop the front image here</b>or click to choose a file</div></div>
-      <div class="editor"><canvas></canvas><p class="hint">Drag the box to move it. Drag a corner to resize.</p></div>
-      <input type="file" accept="image/*" hidden>
+    <!-- Tools Grid -->
+    <div class="tool-grid">
+      <!-- Tool 1: ID card to A4 -->
+      <a href="#a4-id" class="tool-card">
+        <div class="tool-card-head">
+          <div class="tool-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <rect x="6" y="6" width="12" height="6" rx="1"/>
+              <line x1="6" y1="15" x2="11" y2="15"/>
+              <line x1="6" y1="18" x2="18" y2="18"/>
+            </svg>
+          </div>
+          <span class="tool-tag featured">Popular</span>
+        </div>
+        <h2>ID card to A4</h2>
+        <p class="tool-desc">Place front and back ID photos onto a single A4 page with true physical dimensions (85.6 × 54 mm), ready to print or save.</p>
+        <ul class="tool-features">
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            4-corner perspective crop &amp; auto detection
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Accurate 100% scale A4 layout &amp; cut guides
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            B&amp;W, document filter, brightness &amp; contrast
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Print directly or export as PDF, JPEG, or PNG
+          </li>
+        </ul>
+        <div class="tool-action">
+          <span>Open ID card tool</span>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Tool 2: Convert Files -->
+      <a href="#convert" class="tool-card">
+        <div class="tool-card-head">
+          <div class="tool-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 16V4M7 4L3 8M7 4l4 4"/>
+              <path d="M17 8v12M17 20l4-4M17 20l-4-4"/>
+            </svg>
+          </div>
+          <span class="tool-tag">Batch tool</span>
+        </div>
+        <h2>Convert Files</h2>
+        <p class="tool-desc">Seamlessly switch between PDF and image formats with customizable resolution, DPI, and quality parameters.</p>
+        <ul class="tool-features">
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Convert multi-page PDF files into JPG images
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Compile JPG, PNG, and WebP into one PDF
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Selectable DPI (100, 150, 200, 300)
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Choose A4 page fit or original image aspect
+          </li>
+        </ul>
+        <div class="tool-action">
+          <span>Open file converter</span>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Tool 3: Compress Files -->
+      <a href="#compress" class="tool-card">
+        <div class="tool-card-head">
+          <div class="tool-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="4 14 10 14 10 20"/>
+              <polyline points="20 10 14 10 14 4"/>
+              <line x1="14" y1="10" x2="21" y2="3"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </div>
+          <span class="tool-tag">Batch &amp; Target size</span>
+        </div>
+        <h2>Compress Files</h2>
+        <p class="tool-desc">Batch reduce multiple PDF and image files to meet strict upload size limits (e.g. 100 KB, 200 KB) required by application portals.</p>
+        <ul class="tool-features">
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Batch compress multiple files in one run
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Specify exact target file size in KB
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Intelligent multi-pass optimization
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Download individually or all at once
+          </li>
+        </ul>
+        <div class="tool-action">
+          <span>Open file compressor</span>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+    </div>
+
+    <!-- Feature Highlights -->
+    <section class="features-section">
+      <div class="features-title">
+        <h3>Why use these tools?</h3>
+        <p>Designed for privacy, speed, and standard document workflows</p>
+      </div>
+      <div class="features-row">
+        <div class="feature-box">
+          <div class="feature-box-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <h4>100% Private</h4>
+            <p>Files never leave your computer. Processing happens entirely in your local browser sandbox.</p>
+          </div>
+        </div>
+        <div class="feature-box">
+          <div class="feature-box-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div>
+            <h4>Instant &amp; Free</h4>
+            <p>No waiting queues, file uploads, subscriptions, or watermarks. Works at device speed.</p>
+          </div>
+        </div>
+        <div class="feature-box">
+          <div class="feature-box-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          </div>
+          <div>
+            <h4>Print &amp; Portal Ready</h4>
+            <p>Built-in millimeter precision for physical printing and strict KB targeting for online forms.</p>
+          </div>
+        </div>
+      </div>
     </section>
-    <section class="card" data-slot="back">
-      <h2>Back side <span class="row" style="margin:0"><button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button><button data-act="rot">Rotate 90°</button><button data-act="clear">Remove</button></span></h2>
-      <div class="drop" tabindex="0" role="button" aria-label="Choose back image"><div><b>Drop the back image here</b>or click to choose a file</div></div>
-      <div class="editor"><canvas></canvas><p class="hint">Drag the box to move it. Drag a corner to resize.</p></div>
-      <input type="file" accept="image/*" hidden>
+
+    <footer class="home-footer">
+      <p>Card &amp; File Tools &bull; Single-page static app &bull; Zero remote servers</p>
+    </footer>
+  </main>
+
+  <!-- =========================================================================
+       PAGE 2: ID Card to A4 (#a4-id or #a4)
+       ========================================================================= -->
+  <main id="p-a4" hidden>
+    <div class="tool-crumb">
+      <a href="#home">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All tools
+      </a>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-cur">ID card to A4</span>
+    </div>
+
+    <!-- Input Cards Column -->
+    <div class="col">
+      <!-- Front Side Slot -->
+      <section class="card" data-slot="front">
+        <h2>
+          Front side
+          <span class="row no-margin">
+            <button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button>
+            <button data-act="rot">Rotate 90°</button>
+            <button data-act="clear">Remove</button>
+          </span>
+        </h2>
+        <div class="drop" tabindex="0" role="button" aria-label="Choose front image">
+          <div>
+            <b>Drop the front image here</b>
+            or click to choose a file
+          </div>
+        </div>
+        <div class="editor">
+          <canvas></canvas>
+          <p class="hint">Drag the box to move it. Drag a corner to resize.</p>
+        </div>
+        <input type="file" accept="image/*" hidden>
+      </section>
+
+      <!-- Back Side Slot -->
+      <section class="card" data-slot="back">
+        <h2>
+          Back side
+          <span class="row no-margin">
+            <button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button>
+            <button data-act="rot">Rotate 90°</button>
+            <button data-act="clear">Remove</button>
+          </span>
+        </h2>
+        <div class="drop" tabindex="0" role="button" aria-label="Choose back image">
+          <div>
+            <b>Drop the back image here</b>
+            or click to choose a file
+          </div>
+        </div>
+        <div class="editor">
+          <canvas></canvas>
+          <p class="hint">Drag the box to move it. Drag a corner to resize.</p>
+        </div>
+        <input type="file" accept="image/*" hidden>
+      </section>
+
+      <!-- Adjustments / Filter Panel -->
+      <section class="card" id="adjust">
+        <h2>Filters and adjustments</h2>
+      </section>
+    </div>
+
+    <!-- A4 Live Preview Sidebar -->
+    <aside class="side card">
+      <h2>A4 page</h2>
+      <canvas id="sheet" class="sheet"></canvas>
+
+      <div class="controls">
+        <label>Card width (mm)<input id="cw" type="number" min="30" max="200" step="0.1" value="85.6"></label>
+        <label>Gap (mm)<input id="gap" type="number" min="0" max="100" step="1" value="60"></label>
+        <label>Layout<select id="layout"><option value="stack">Front above back</option><option value="side">Side by side</option></select></label>
+        <label>Position<select id="pos"><option value="top">Near the top</option><option value="mid">Centered</option></select></label>
+        <label class="check"><input id="lock" type="checkbox" checked> Keep the card shape (85.6 × 54 mm)</label>
+        <label class="check"><input id="round" type="checkbox" checked> Round the corners</label>
+        <label class="check"><input id="guide" type="checkbox" checked> Draw a thin cutting outline</label>
+        <label class="span-full">Max file size for PDF and JPEG (KB, optional)<input id="maxkb" type="number" min="20" step="10" inputmode="numeric" placeholder="No limit"></label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="print">Print</button>
+        <button id="pdf">Download PDF</button>
+        <button id="jpg">Download JPEG</button>
+        <button id="png">Download PNG</button>
+      </div>
+      <p class="hint">Print uses your browser print dialog at 100% scale. If nothing opens here, download the PDF and print that instead.</p>
+    </aside>
+  </main>
+
+  <!-- =========================================================================
+       PAGE 3: Convert Files (#convert)
+       ========================================================================= -->
+  <main id="p-convert" class="single" hidden>
+    <div class="tool-crumb">
+      <a href="#home">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All tools
+      </a>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-cur">Convert</span>
+    </div>
+
+    <section class="card">
+      <h2>Convert files</h2>
+      <div class="drop" id="cv-drop" tabindex="0" role="button" aria-label="Choose files to convert">
+        <div>
+          <b>Drop PDF, JPG, PNG or WebP files</b>
+          or tap to choose (you can pick several)
+        </div>
+      </div>
+      <input type="file" id="cv-file" accept=".pdf,application/pdf,image/*" multiple hidden>
+
+      <div class="controls">
+        <label>Convert to
+          <select id="cv-to">
+            <option value="jpg">JPG image (.jpg)</option>
+            <option value="pdf">PDF (.pdf)</option>
+          </select>
+        </label>
+        <label>JPG quality (%)<input id="cv-q" type="number" min="10" max="100" value="90" inputmode="numeric"></label>
+        <label>PDF page to image (dpi)
+          <select id="cv-dpi">
+            <option>100</option>
+            <option selected>150</option>
+            <option>200</option>
+            <option>300</option>
+          </select>
+        </label>
+        <label>Images in a PDF
+          <select id="cv-fit">
+            <option value="a4">Fit on A4 pages</option>
+            <option value="img">Same size as image</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="cv-go">Convert</button>
+      </div>
+      <p class="note" id="cv-note" aria-live="polite"></p>
+      <div id="cv-out"></div>
     </section>
-    <section class="card" id="adjust"><h2>Filters and adjustments</h2></section>
-  </div>
-  <aside class="side card">
-    <h2>A4 page</h2>
-    <canvas id="sheet" class="sheet"></canvas>
-    <div class="controls">
-      <label>Card width (mm)<input id="cw" type="number" min="30" max="200" step="0.1" value="85.6"></label>
-      <label>Gap (mm)<input id="gap" type="number" min="0" max="100" step="1" value="60"></label>
-      <label>Layout<select id="layout"><option value="stack">Front above back</option><option value="side">Side by side</option></select></label>
-      <label>Position<select id="pos"><option value="top">Near the top</option><option value="mid">Centered</option></select></label>
-      <label class="check"><input id="lock" type="checkbox" checked> Keep the card shape (85.6 × 54 mm)</label>
-      <label class="check"><input id="round" type="checkbox" checked> Round the corners</label>
-      <label class="check"><input id="guide" type="checkbox" checked> Draw a thin cutting outline</label>
-      <label style="grid-column:1/-1">Max file size for PDF and JPEG (KB, optional)<input id="maxkb" type="number" min="20" step="10" inputmode="numeric" placeholder="No limit"></label>
+  </main>
+
+  <!-- =========================================================================
+       PAGE 4: Compress Files (#compress)
+       ========================================================================= -->
+  <main id="p-compress" class="single" hidden>
+    <div class="tool-crumb">
+      <a href="#home">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All tools
+      </a>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-cur">Compress</span>
     </div>
-    <div class="actions">
-      <button class="primary" id="print">Print</button>
-      <button id="pdf">Download PDF</button>
-      <button id="jpg">Download JPEG</button>
-      <button id="png">Download PNG</button>
+
+    <section class="card">
+      <h2>Compress files</h2>
+      <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose files to compress">
+        <div>
+          <b>Drop PDF, JPG, PNG or WebP files</b>
+          or tap to choose (you can pick several)
+        </div>
+      </div>
+      <input type="file" id="cp-file" accept=".pdf,application/pdf,image/*" multiple hidden>
+
+      <div class="controls">
+        <label class="span-full">Target size (KB)
+          <input id="cp-kb" type="number" min="5" step="10" value="200" inputmode="numeric">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="cp-go">Compress files</button>
+      </div>
+      <p class="note" id="cp-note" aria-live="polite"></p>
+      <div id="cp-out"></div>
+      <p class="hint">Images are saved as JPG. PDFs are rebuilt from page images, so their text will no longer be selectable. The file is first tuned by quality, then reduced in size if the quality alone cannot reach the target.</p>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       Full-Screen Crop & Perspective Modal Editor
+       ========================================================================= -->
+  <div id="editor" class="modal" role="dialog" aria-modal="true" aria-label="Crop card image" hidden>
+    <div class="m-top">
+      <b id="m-title">Front side</b>
+      <div class="seg">
+        <button id="m-auto">Auto select</button>
+        <button id="m-rot">Rotate 90°</button>
+        <button id="m-reset">Reset</button>
+      </div>
     </div>
-    <p class="hint">Print uses your browser print dialog at 100% scale. If nothing opens here, download the PDF and print that instead.</p>
-  </aside>
-</main>
-<main id="p-convert" class="single" hidden>
-  <div class="tool-crumb">
-    <a href="#home">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      All tools
-    </a>
-    <span class="crumb-sep">/</span>
-    <span class="crumb-cur">Convert</span>
-  </div>
-  <section class="card">
-    <h2>Convert files</h2>
-    <div class="drop" id="cv-drop" tabindex="0" role="button" aria-label="Choose files to convert"><div><b>Drop PDF, JPG, PNG or WebP files</b>or tap to choose (you can pick several)</div></div>
-    <input type="file" id="cv-file" accept=".pdf,application/pdf,image/*" multiple hidden>
-    <div class="controls">
-      <label>Convert to<select id="cv-to"><option value="jpg">JPG image (.jpg)</option><option value="pdf">PDF (.pdf)</option></select></label>
-      <label>JPG quality (%)<input id="cv-q" type="number" min="10" max="100" value="90" inputmode="numeric"></label>
-      <label>PDF page to image (dpi)<select id="cv-dpi"><option>100</option><option selected>150</option><option>200</option><option>300</option></select></label>
-      <label>Images in a PDF<select id="cv-fit"><option value="a4">Fit on A4 pages</option><option value="img">Same size as image</option></select></label>
+    <div class="m-stage" id="m-stage"></div>
+    <canvas id="loupe" width="300" height="300" hidden aria-hidden="true"></canvas>
+    <div class="m-bot">
+      <span class="m-hint" id="m-hint"></span>
+      <div>
+        <button id="m-cancel">Cancel</button>
+        <button class="primary" id="m-done">Done</button>
+      </div>
     </div>
-    <div class="actions"><button class="primary" id="cv-go">Convert</button></div>
-    <p class="note" id="cv-note" aria-live="polite"></p>
-    <div id="cv-out"></div>
-  </section>
-</main>
-<main id="p-compress" class="single" hidden>
-  <div class="tool-crumb">
-    <a href="#home">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      All tools
-    </a>
-    <span class="crumb-sep">/</span>
-    <span class="crumb-cur">Compress</span>
   </div>
-  <section class="card">
-    <h2>Compress files</h2>
-    <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose files to compress"><div><b>Drop PDF, JPG, PNG or WebP files</b>or tap to choose (you can pick several)</div></div>
-    <input type="file" id="cp-file" accept=".pdf,application/pdf,image/*" multiple hidden>
-    <div class="controls">
-      <label style="grid-column:1/-1">Target size (KB)<input id="cp-kb" type="number" min="5" step="10" value="200" inputmode="numeric"></label>
-    </div>
-    <div class="actions"><button class="primary" id="cp-go">Compress files</button></div>
-    <p class="note" id="cp-note" aria-live="polite"></p>
-    <div id="cp-out"></div>
-    <p class="hint">Images are saved as JPG. PDFs are rebuilt from page images, so their text will no longer be selectable. The file is first tuned by quality, then reduced in size if the quality alone cannot reach the target.</p>
-  </section>
-</main>
-<div id="editor" class="modal" role="dialog" aria-modal="true" aria-label="Crop card image" hidden>
-  <div class="m-top">
-    <b id="m-title">Front side</b>
-    <div class="seg"><button id="m-auto">Auto select</button><button id="m-rot">Rotate 90°</button><button id="m-reset">Reset</button></div>
-  </div>
-  <div class="m-stage" id="m-stage"></div>
-  <canvas id="loupe" width="300" height="300" hidden aria-hidden="true"></canvas>
-  <div class="m-bot"><span class="m-hint" id="m-hint"></span><div><button id="m-cancel">Cancel</button><button class="primary" id="m-done">Done</button></div></div>
-</div>
-<div id="printArea"><img id="printImg" alt="A4 page to print"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script>
-const RATIO = 85.6 / 54, $ = s => document.querySelector(s);
-const ids = ['front', 'back'], slots = {}, MS = { s: null, snap: null, open: false };
-const opt = () => ({ w: +$('#cw').value || 85.6, gap: +$('#gap').value || 0, layout: $('#layout').value, pos: $('#pos').value, lock: $('#lock').checked, round: $('#round').checked, guide: $('#guide').checked });
 
-ids.forEach(id => {
-  const el = document.querySelector(`[data-slot=${id}]`);
-  const s = slots[id] = { id, el, drop: el.querySelector('.drop'), ed: el.querySelector('.editor'), cv: el.querySelector('canvas'), file: el.querySelector('input'), img: null, crop: null, quad: null, src: null, persp: true, f: { mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false }, k: 1, mode: null };
-  s.drop.onclick = () => s.file.click();
-  s.drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.file.click(); } };
-  s.file.onchange = () => s.file.files[0] && load(s, s.file.files[0]);
-  ['dragover', 'dragenter'].forEach(t => s.drop.addEventListener(t, e => { e.preventDefault(); s.drop.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(t => s.drop.addEventListener(t, e => { e.preventDefault(); s.drop.classList.remove('over'); }));
-  s.drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) load(s, f); });
-  el.querySelector('[data-act=clear]').onclick = () => { s.img = null; s.crop = null; s.src = null; s.file.value = ''; s.ed.style.display = 'none'; s.drop.style.display = 'grid'; preview(); };
-  el.querySelector('[data-act=rot]').onclick = () => rotate(s);
-  const pb = el.querySelector('[data-act=persp]');
-  pb.onclick = () => {
-    s.persp = !s.persp; pb.setAttribute('aria-pressed', s.persp);
-    el.querySelector('.editor .hint').textContent = s.persp ? 'Drag each corner onto a corner of the card. Drag inside to move all four.' : 'Drag the box to move it. Drag a corner to resize.';
-    if (s.img) { const c = s.crop; if (s.persp) s.quad = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }]; draw(s); preview(); }
-  };
-  bind(s); mountThumb(s);
-});
-adjustPanel();
+  <!-- Hidden print area for browser print engine -->
+  <div id="printArea" aria-hidden="true"><img id="printImg" alt="A4 page to print"></div>
 
-function load(s, f) {
-  const im = new Image();
-  im.onload = () => { s.img = im; initCrop(s); autoSelect(s, true); show(s); openEditor(s); };
-  im.src = URL.createObjectURL(f);
-}
-function show(s) { s.drop.style.display = 'none'; s.ed.style.display = 'block'; draw(s); preview(); }
-function initCrop(s) {
-  const W = s.img.width, H = s.img.height, r = opt().lock ? RATIO : W / H;
-  let w = W * .92, h = w / r;
-  if (h > H * .92) { h = H * .92; w = h * r; }
-  s.crop = { x: (W - w) / 2, y: (H - h) / 2, w, h };
-  const c = s.crop; s.quad = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }]; s.src = null;
-}
-function rotate(s) {
-  if (!s.img) return;
-  const c = document.createElement('canvas'); c.width = s.img.height; c.height = s.img.width;
-  const x = c.getContext('2d'); x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(s.img, 0, 0);
-  s.img = c; initCrop(s); draw(s); preview();
-}
-function draw(s) {
-  const im = s.img; if (!im) return;
-  const cw = Math.min(im.width, 1400); s.k = cw / im.width;
-  s.cv.width = cw; s.cv.height = Math.round(im.height * s.k);
-  const x = s.cv.getContext('2d'), k = s.k, c = s.crop;
-  x.drawImage(im, 0, 0, s.cv.width, s.cv.height);
-  const P = s.persp ? s.quad : [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }];
-  const poly = () => { P.forEach((p, i) => i ? x.lineTo(p.x * k, p.y * k) : x.moveTo(p.x * k, p.y * k)); x.closePath(); };
-  x.fillStyle = 'rgba(0,0,0,.55)';
-  x.beginPath(); x.rect(0, 0, s.cv.width, s.cv.height); poly(); x.fill('evenodd');
-  x.strokeStyle = '#fff'; x.lineWidth = 2; x.beginPath(); poly(); x.stroke();
-  x.fillStyle = '#fff'; x.strokeStyle = '#0b6e63';
-  const hs = 9 * Math.max(1, s.cv.width / (s.cv.clientWidth || s.cv.width));
-  P.forEach((p, i) => { const n = P[(i + 1) % 4]; x.beginPath(); x.arc((p.x + n.x) / 2 * k, (p.y + n.y) / 2 * k, hs * .85, 0, 7); x.fill(); x.stroke(); });
-  P.forEach(p => { x.fillRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); x.strokeRect(p.x * k - hs, p.y * k - hs, hs * 2, hs * 2); });
-}
-const corners = c => [{ n: 'tl', x: c.x, y: c.y, ax: c.x + c.w, ay: c.y + c.h }, { n: 'tr', x: c.x + c.w, y: c.y, ax: c.x, ay: c.y + c.h }, { n: 'bl', x: c.x, y: c.y + c.h, ax: c.x + c.w, ay: c.y }, { n: 'br', x: c.x + c.w, y: c.y + c.h, ax: c.x, ay: c.y }];
+  <!-- Third-party Client-Side Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-function bind(s) {
-  const pt = e => { const r = s.cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (s.cv.width / r.width) / s.k, y: (e.clientY - r.top) * (s.cv.height / r.height) / s.k, hr: 32 * (s.cv.width / r.width) / s.k }; };
-  const hit = p => {
-    if (s.persp) {
-      const i = s.quad.findIndex(q => Math.abs(q.x - p.x) < p.hr && Math.abs(q.y - p.y) < p.hr);
-      if (i >= 0) return { t: 'vert', i };
-      const ei = s.quad.findIndex((q, i) => { const n = s.quad[(i + 1) % 4]; return Math.abs((q.x + n.x) / 2 - p.x) < p.hr && Math.abs((q.y + n.y) / 2 - p.y) < p.hr; });
-      if (ei >= 0) return { t: 'edge', i: ei };
-      return inPoly(s.quad, p) ? { t: 'move' } : null;
-    }
-    const c = s.crop; const h = corners(c).find(q => Math.abs(q.x - p.x) < p.hr && Math.abs(q.y - p.y) < p.hr); if (h) return { t: 'resize', h }; if (p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h) return { t: 'move' }; return null; };
-  s.cv.addEventListener('pointerdown', e => {
-    if (!s.img) return; const p = pt(e), h = hit(p); if (!h) return;
-    s.mode = h; s.off = { x: p.x - s.crop.x, y: p.y - s.crop.y }; s.p0 = p; s.q0 = s.quad.map(q => ({ ...q })); s.cv.setPointerCapture(e.pointerId);
-  });
-  s.cv.addEventListener('pointermove', e => {
-    if (!s.img) return; const p = pt(e), c = s.crop, W = s.img.width, H = s.img.height;
-    if (!s.mode) { const h = hit(p); s.cv.style.cursor = !h ? 'default' : h.t === 'move' ? 'move' : (h.t === 'vert' || h.t === 'edge') ? 'crosshair' : (h.h.n === 'tl' || h.h.n === 'br') ? 'nwse-resize' : 'nesw-resize'; return; }
-    if (s.mode.t === 'edge') {
-      const i = s.mode.i, j = (i + 1) % 4, a = s.q0[i], b = s.q0[j];
-      let nx = -(b.y - a.y), ny = b.x - a.x; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
-      const t = (p.x - s.p0.x) * nx + (p.y - s.p0.y) * ny;
-      s.quad[i] = { x: Math.max(0, Math.min(W, a.x + nx * t)), y: Math.max(0, Math.min(H, a.y + ny * t)) };
-      s.quad[j] = { x: Math.max(0, Math.min(W, b.x + nx * t)), y: Math.max(0, Math.min(H, b.y + ny * t)) };
-    } else if (s.mode.t === 'vert') {
-      s.quad[s.mode.i] = { x: Math.max(0, Math.min(W, p.x)), y: Math.max(0, Math.min(H, p.y)) };
-    } else if (s.persp && s.mode.t === 'move') {
-      const xs = s.q0.map(q => q.x), ys = s.q0.map(q => q.y);
-      const dx = Math.max(-Math.min(...xs), Math.min(W - Math.max(...xs), p.x - s.p0.x));
-      const dy = Math.max(-Math.min(...ys), Math.min(H - Math.max(...ys), p.y - s.p0.y));
-      s.quad = s.q0.map(q => ({ x: q.x + dx, y: q.y + dy }));
-    } else if (s.mode.t === 'move') {
-      c.x = Math.max(0, Math.min(W - c.w, p.x - s.off.x)); c.y = Math.max(0, Math.min(H - c.h, p.y - s.off.y));
-    } else {
-      const { ax, ay } = s.mode.h, sx = p.x >= ax ? 1 : -1, sy = p.y >= ay ? 1 : -1;
-      const mw = sx > 0 ? W - ax : ax, mh = sy > 0 ? H - ay : ay;
-      let w = Math.abs(p.x - ax), h = Math.abs(p.y - ay);
-      if (opt().lock) { w = Math.max(30, Math.min(w, mw, mh * RATIO)); h = w / RATIO; }
-      else { w = Math.max(30, Math.min(w, mw)); h = Math.max(30, Math.min(h, mh)); }
-      c.x = sx > 0 ? ax : ax - w; c.y = sy > 0 ? ay : ay - h; c.w = w; c.h = h;
-    }
-    draw(s); preview();
-  });
-  const end = () => { s.mode = null; };
-  s.cv.addEventListener('pointerup', end); s.cv.addEventListener('pointercancel', end);
-}
-
-function adjustPanel() {
-  const root = $('#adjust'), fresh = () => ({ mode: 'none', br: 0, ct: 0, sat: 0, sh: 0, flip: false });
-  let tgt = 'both';
-  const tg = [['both', 'Both sides'], ['front', 'Front only'], ['back', 'Back only']];
-  const modes = [['none', 'Original'], ['bw', 'Black &amp; white'], ['doc', 'Document'], ['sepia', 'Sepia']];
-  const sl = [['br', 'Brightness', -100, 100], ['ct', 'Contrast', -100, 100], ['sat', 'Colour', -100, 100], ['sh', 'Sharpen', 0, 100]];
-  root.insertAdjacentHTML('beforeend',
-    '<div class="row" style="margin-top:0"><span>Apply to</span>' + tg.map(t => `<button data-t="${t[0]}">${t[1]}</button>`).join('') + '</div>' +
-    '<div class="row">' + modes.map(m => `<button data-mode="${m[0]}">${m[1]}</button>`).join('') + '</div>' +
-    '<div class="sliders">' + sl.map(v => `<label>${v[1]}<input type="range" data-k="${v[0]}" min="${v[2]}" max="${v[3]}" value="0"></label>`).join('') + '</div>' +
-    '<div class="row"><button data-act="flip">Flip horizontally</button><button data-act="reset">Reset edits</button></div>' +
-    '<p class="hint">Changes show in the A4 preview and in the download.</p>');
-  const targets = () => tgt === 'both' ? ids : [tgt];
-  const sync = () => {
-    const f = slots[targets()[0]].f, on = (el, v) => el.setAttribute('aria-pressed', v);
-    root.querySelectorAll('[data-t]').forEach(b => on(b, b.dataset.t === tgt));
-    root.querySelectorAll('[data-mode]').forEach(b => on(b, b.dataset.mode === f.mode));
-    root.querySelectorAll('[data-k]').forEach(i => { i.value = f[i.dataset.k]; });
-    on(root.querySelector('[data-act=flip]'), f.flip);
-  };
-  root.addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.t) tgt = b.dataset.t;
-    else {
-      const flip = !slots[targets()[0]].f.flip;
-      targets().forEach(id => {
-        const s = slots[id];
-        if (b.dataset.mode) s.f.mode = b.dataset.mode;
-        else if (b.dataset.act === 'flip') s.f.flip = flip;
-        else if (b.dataset.act === 'reset') s.f = fresh();
-      });
-    }
-    sync(); preview();
-  });
-  root.addEventListener('input', e => { const k = e.target.dataset.k; if (k) { targets().forEach(id => { slots[id].f[k] = +e.target.value; }); preview(); } });
-  sync();
-}
-function grade(x, w, h, f) {
-  if (f.mode === 'none' && !f.br && !f.ct && !f.sat && !f.sh) return;
-  const im = x.getImageData(0, 0, w, h), d = im.data;
-  const cf = (259 * (f.ct + 255)) / (255 * (259 - f.ct)), bo = f.br * 2.55, sa = 1 + f.sat / 100;
-  for (let i = 0; i < d.length; i += 4) {
-    let r = d[i], g = d[i + 1], b = d[i + 2];
-    if (f.mode === 'sepia') { const R = .393 * r + .769 * g + .189 * b, G = .349 * r + .686 * g + .168 * b, B = .272 * r + .534 * g + .131 * b; r = R; g = G; b = B; }
-    else if (f.mode === 'bw' || f.mode === 'doc') { r = g = b = .299 * r + .587 * g + .114 * b; if (f.mode === 'doc') r = g = b = (r - 70) * 255 / 130; }
-    if (sa !== 1) { const y = .299 * r + .587 * g + .114 * b; r = y + (r - y) * sa; g = y + (g - y) * sa; b = y + (b - y) * sa; }
-    d[i] = (r + bo - 128) * cf + 128; d[i + 1] = (g + bo - 128) * cf + 128; d[i + 2] = (b + bo - 128) * cf + 128;
-  }
-  if (f.sh) {
-    const src = new Uint8ClampedArray(d), a = f.sh / 100, st = w * 4;
-    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
-      const o = y * st + xx * 4;
-      for (let c = 0; c < 3; c++) { const k = o + c; d[k] = src[k] + a * (4 * src[k] - src[k - 4] - src[k + 4] - src[k - st] - src[k + st]); }
-    }
-  }
-  x.putImageData(im, 0, 0);
-}
-function cardCanvas(s, w, h) {
-  const t = document.createElement('canvas'); t.width = w; t.height = h;
-  const x = t.getContext('2d'); x.imageSmoothingQuality = 'high';
-  if (s.f.flip) { x.translate(w, 0); x.scale(-1, 1); }
-  if (s.persp) x.drawImage(warp(s, w, h), 0, 0);
-  else { const c = s.crop; x.drawImage(s.img, c.x, c.y, c.w, c.h, 0, 0, w, h); }
-  x.setTransform(1, 0, 0, 1, 0, 0);
-  grade(x, w, h, s.f);
-  return t;
-}
-function inPoly(P, p) {
-  let r = false;
-  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
-    if ((P[i].y > p.y) !== (P[j].y > p.y) && p.x < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) + P[i].x) r = !r;
-  }
-  return r;
-}
-function aspect(s, o) {
-  if (!s.persp) return s.crop.w / s.crop.h;
-  if (o.lock) return RATIO;
-  const q = s.quad, d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  return ((d(q[0], q[1]) + d(q[3], q[2])) / 2) / (((d(q[0], q[3]) + d(q[1], q[2])) / 2) || 1);
-}
-// Maps the four picked corners onto a flat rectangle (projective warp, bilinear sampling).
-function warp(s, ow, oh) {
-  if (!s.src) { const c = document.createElement('canvas'); c.width = s.img.width; c.height = s.img.height; const t = c.getContext('2d'); t.drawImage(s.img, 0, 0); s.src = t.getImageData(0, 0, c.width, c.height); }
-  const S = s.src, sw = S.width, sh = S.height, d = S.data, [p0, p1, p2, p3] = s.quad;
-  const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x, dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y;
-  let g = 0, h = 0; const den = dx1 * dy2 - dx2 * dy1;
-  if ((Math.abs(dx3) > 1e-9 || Math.abs(dy3) > 1e-9) && Math.abs(den) > 1e-9) { g = (dx3 * dy2 - dx2 * dy3) / den; h = (dx1 * dy3 - dx3 * dy1) / den; }
-  const A = p1.x - p0.x + g * p1.x, B = p3.x - p0.x + h * p3.x, C = p0.x, D = p1.y - p0.y + g * p1.y, E = p3.y - p0.y + h * p3.y, F = p0.y;
-  const oc = document.createElement('canvas'); oc.width = ow; oc.height = oh;
-  const ox = oc.getContext('2d'), out = ox.createImageData(ow, oh), od = out.data;
-  const cl = (v, m) => v < 0 ? 0 : v > m ? m : v;
-  for (let j = 0; j < oh; j++) {
-    const v = (j + .5) / oh;
-    for (let i = 0; i < ow; i++) {
-      const u = (i + .5) / ow, w = g * u + h * v + 1;
-      const sx = (A * u + B * v + C) / w - .5, sy = (D * u + E * v + F) / w - .5;
-      const x0 = Math.floor(sx), y0 = Math.floor(sy), fx = sx - x0, fy = sy - y0;
-      const xa = cl(x0, sw - 1), xb = cl(x0 + 1, sw - 1), ya = cl(y0, sh - 1), yb = cl(y0 + 1, sh - 1);
-      const i00 = (ya * sw + xa) * 4, i10 = (ya * sw + xb) * 4, i01 = (yb * sw + xa) * 4, i11 = (yb * sw + xb) * 4, o = (j * ow + i) * 4;
-      for (let k = 0; k < 4; k++) od[o + k] = (d[i00 + k] * (1 - fx) + d[i10 + k] * fx) * (1 - fy) + (d[i01 + k] * (1 - fx) + d[i11 + k] * fx) * fy;
-    }
-  }
-  ox.putImageData(out, 0, 0); return oc;
-}
-function compose(cv, dpi, placeholders) {
-  const o = opt(), px = dpi / 25.4, W = Math.round(210 * px), H = Math.round(297 * px);
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
-  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-  const items = ids.map(id => { const s = slots[id]; return { id, s, w: o.w, h: o.w / (s.img ? aspect(s, o) : RATIO) }; });
-  if (o.layout === 'side') o.gap = Math.min(o.gap, Math.max(0, 200 - 2 * o.w));
-  const stack = o.layout === 'stack';
-  const totW = stack ? o.w : items.length * o.w + o.gap * (items.length - 1);
-  const totH = stack ? items.reduce((a, i) => a + i.h, 0) + o.gap * (items.length - 1) : Math.max(...items.map(i => i.h));
-  let cx = (210 - totW) / 2, cy = o.pos === 'top' ? 25 : (297 - totH) / 2;
-  cx = Math.max(cx, 0); cy = Math.max(cy, 0);
-  items.forEach(i => {
-    const X = cx * px, Y = cy * px, w = i.w * px, h = i.h * px, r = o.round ? 3.18 * px : 0;
-    const path = () => { x.beginPath(); if (r && x.roundRect) x.roundRect(X, Y, w, h, r); else x.rect(X, Y, w, h); };
-    if (i.s.img) {
-      x.save(); path(); x.clip();
-      x.drawImage(cardCanvas(i.s, Math.round(w), Math.round(h)), X, Y, w, h);
-      x.restore();
-      if (o.guide) { path(); x.strokeStyle = '#b5bcc3'; x.lineWidth = Math.max(1, .3 * px); x.stroke(); }
-    } else if (placeholders) {
-      path(); x.setLineDash([8, 6]); x.strokeStyle = '#b5bcc3'; x.lineWidth = 1.5; x.stroke(); x.setLineDash([]);
-      x.fillStyle = '#8a96a1'; x.font = `${Math.round(w / 16)}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillText(i.id === 'front' ? 'Front' : 'Back', X + w / 2, Y + h / 2);
-    }
-    if (stack) cy += i.h + o.gap; else cx += i.w + o.gap;
-  });
-}
-const preview = () => { compose($('#sheet'), 100, true); if (!MS.open) ids.forEach(i => drawThumb(slots[i])); };
-
-function exportCanvas() { const c = document.createElement('canvas'); compose(c, 300, false); return c; }
-function need() { if (!ids.some(i => slots[i].img)) { alert('Add at least one card image first.'); return false; } return true; }
-const maxKB = () => +$('#maxkb').value || 0;
-async function run(sel, fn) { busy(sel, true); await tick(); try { await fn(); } catch (e) { alert('Something went wrong: ' + (e.message || e)); } busy(sel, false); }
-$('#png').onclick = () => need() && run('#png', async () => save(await toBlob(exportCanvas(), 'image/png'), 'id-card-a4.png'));
-$('#jpg').onclick = () => need() && run('#jpg', async () => { const c = exportCanvas(), kb = maxKB(); save(kb ? await jpegToSize(c, kb) : await toBlob(c, 'image/jpeg', .95), 'id-card-a4.jpg'); });
-$('#pdf').onclick = () => need() && run('#pdf', async () => {
-  if (!window.jspdf) { alert('The PDF library did not load. Download the JPEG instead.'); return; }
-  const pg = [{ c: exportCanvas(), w: 210, h: 297 }], kb = maxKB();
-  save(kb ? await pdfToSize(pg, kb) : toPdf(pg, .95), 'id-card-a4.pdf');
-});
-['cw', 'gap', 'layout', 'pos', 'round', 'guide'].forEach(i => $('#' + i).addEventListener('input', preview));
-$('#lock').addEventListener('change', () => { if ($('#lock').checked) ids.forEach(i => { const s = slots[i]; if (s.img) { initCrop(s); draw(s); } }); preview(); });
-preview();
-addEventListener('resize', () => fit());
-
-/* ---------- shared helpers ---------- */
-const fmt = n => n >= 1048576 ? (n / 1048576).toFixed(2) + ' MB' : (n / 1024).toFixed(1) + ' KB';
-const toBlob = (c, t, q) => new Promise(r => c.toBlob(r, t, q));
-const tick = () => new Promise(r => setTimeout(r, 0));
-const say = (el, t) => { el.textContent = t; };
-function busy(sel, on) { const b = $(sel); if (on) { b.dataset.t = b.textContent; b.textContent = 'Working…'; } else b.textContent = b.dataset.t || b.textContent; b.disabled = on; }
-async function save(blob, name) {
-  try { const d = window.claude && await claude.use('downloads'); if (d) { await d.save({ filename: name, data: blob }); return; } }
-  catch (e) { if (e && e.code === 'declined') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-}
-async function imgCanvas(file) {
-  const bmp = await createImageBitmap(file).catch(() => null);
-  const src = bmp || await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read ' + file.name)); i.src = URL.createObjectURL(file); });
-  const c = document.createElement('canvas'); c.width = src.width || src.naturalWidth; c.height = src.height || src.naturalHeight;
-  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0); return c;
-}
-async function jpegToSize(canvas, kb) {
-  const limit = kb * 1024; let c = canvas;
-  for (let pass = 0; pass < 8; pass++) {
-    let b = await toBlob(c, 'image/jpeg', .92); if (b.size <= limit) return b;
-    let lo = .05, hi = .92, best = null;
-    for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; b = await toBlob(c, 'image/jpeg', m); if (b.size <= limit) { best = b; lo = m; } else hi = m; }
-    if (best) return best;
-    const n = document.createElement('canvas'); n.width = Math.max(50, Math.round(c.width * .8)); n.height = Math.max(50, Math.round(c.height * .8));
-    const x = n.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, n.width, n.height); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, n.width, n.height); c = n; await tick();
-  }
-  return toBlob(c, 'image/jpeg', .05);
-}
-function toPdf(pages, q) {
-  const { jsPDF } = window.jspdf; let pdf;
-  pages.forEach(p => {
-    const o = p.w > p.h ? 'l' : 'p', f = [Math.min(p.w, p.h), Math.max(p.w, p.h)];
-    if (!pdf) pdf = new jsPDF({ unit: 'mm', format: f, orientation: o, compress: true }); else pdf.addPage(f, o);
-    const b = p.box || [0, 0, p.w, p.h];
-    pdf.addImage(p.c.toDataURL('image/jpeg', q), 'JPEG', b[0], b[1], b[2], b[3], undefined, 'FAST');
-  });
-  return pdf.output('blob');
-}
-function shrink(pages, f) {
-  return pages.map(p => { const c = document.createElement('canvas'); c.width = Math.max(50, Math.round(p.c.width * f)); c.height = Math.max(50, Math.round(p.c.height * f)); const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(p.c, 0, 0, c.width, c.height); return { ...p, c }; });
-}
-async function pdfToSize(pages, kb) {
-  const limit = kb * 1024; let cur = pages;
-  for (let pass = 0; pass < 7; pass++) {
-    let b = toPdf(cur, .9); if (b.size <= limit) return b;
-    let lo = .08, hi = .9, best = null;
-    for (let i = 0; i < 6; i++) { await tick(); const m = (lo + hi) / 2; b = toPdf(cur, m); if (b.size <= limit) { best = b; lo = m; } else hi = m; }
-    if (best) return best;
-    cur = shrink(cur, .8); await tick();
-  }
-  return toPdf(cur, .08);
-}
-async function pdfPages(file, dpi, note) {
-  if (!window.pdfjsLib) throw new Error('The PDF reader did not load. Check your connection and try again.');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    note && note(`Reading page ${i} of ${pdf.numPages}…`);
-    const pg = await pdf.getPage(i), v1 = pg.getViewport({ scale: 1 });
-    let sc = dpi / 72; const px = v1.width * v1.height * sc * sc; if (px > 16e6) sc *= Math.sqrt(16e6 / px);
-    const vp = pg.getViewport({ scale: sc }), c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
-    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-    await pg.render({ canvasContext: x, viewport: vp }).promise;
-    out.push({ c, w: v1.width * 25.4 / 72, h: v1.height * 25.4 / 72 }); await tick();
-  }
-  return out;
-}
-function pageFor(c, fit) {
-  if (fit === 'img') return { c, w: c.width * 25.4 / 150, h: c.height * 25.4 / 150 };
-  const land = c.width > c.height, w = land ? 297 : 210, h = land ? 210 : 297, s = Math.min(w / c.width, h / c.height), iw = c.width * s, ih = c.height * s;
-  return { c, w, h, box: [(w - iw) / 2, (h - ih) / 2, iw, ih] };
-}
-const isPdf = f => /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
-const stem = f => f.name.replace(/\.[^.]+$/, '');
-function result(box, blob, name, extra) {
-  const row = document.createElement('div'); row.className = 'res';
-  const t = document.createElement('span'); t.textContent = name + ' · ' + fmt(blob.size) + (extra ? ' · ' + extra : '');
-  const b = document.createElement('button'); b.className = 'primary'; b.textContent = 'Download'; b.onclick = () => save(blob, name);
-  row.append(t, b); box.append(row);
-}
-
-/* ---------- file pickers ---------- */
-const picks = { cv: [], cp: [] };
-function wireDrop(p, multi) {
-  const drop = $(`#${p}-drop`), inp = $(`#${p}-file`);
-  const set = fs => {
-    picks[p] = multi ? fs : fs.slice(0, 1);
-    const d = document.createElement('div'), b = document.createElement('b');
-    const n = picks[p].length;
-    if (n === 1) {
-      b.textContent = picks[p][0].name + ' (' + fmt(picks[p][0].size) + ')';
-    } else {
-      const names = picks[p].slice(0, 3).map(f => f.name).join(', ');
-      b.textContent = `${n} files selected` + (n <= 3 ? `: ${names}` : `: ${names}…`);
-    }
-    const hint = document.createElement('span');
-    hint.textContent = 'Tap or drop to change files';
-    hint.style.display = 'block';
-    hint.style.fontSize = '13px';
-    hint.style.marginTop = '4px';
-    d.append(b, hint);
-    drop.replaceChildren(d);
-  };
-  drop.onclick = () => inp.click();
-  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
-  inp.onchange = () => inp.files.length && set([...inp.files]);
-  ['dragover', 'dragenter'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
-  drop.addEventListener('drop', e => e.dataTransfer.files.length && set([...e.dataTransfer.files]));
-}
-wireDrop('cv', true); wireDrop('cp', true);
-
-function addDownloadAll(box, items, label) {
-  if (items.length <= 1) return;
-  const row = document.createElement('div');
-  row.className = 'res';
-  row.style.background = 'rgba(11, 110, 99, 0.08)';
-  row.style.padding = '12px 14px';
-  row.style.borderRadius = '8px';
-  row.style.marginBottom = '12px';
-  const t = document.createElement('span');
-  t.innerHTML = `<b>${items.length} ${label || 'files ready'}</b>`;
-  const b = document.createElement('button');
-  b.className = 'primary';
-  b.textContent = `Download all (${items.length})`;
-  b.onclick = async () => {
-    b.disabled = true;
-    for (let i = 0; i < items.length; i++) {
-      b.textContent = `Saving ${i + 1}/${items.length}…`;
-      await save(items[i].blob, items[i].name);
-      await new Promise(r => setTimeout(r, 250));
-    }
-    b.textContent = 'Downloaded all';
-    b.disabled = false;
-  };
-  row.append(t, b);
-  box.prepend(row);
-}
-
-/* ---------- convert ---------- */
-$('#cv-go').onclick = async () => {
-  const fs = picks.cv, out = $('#cv-out'), note = $('#cv-note'); out.replaceChildren();
-  if (!fs.length) return say(note, 'Choose at least one file first.');
-  const to = $('#cv-to').value, q = Math.min(100, Math.max(10, +$('#cv-q').value || 90)) / 100, dpi = +$('#cv-dpi').value, fit = $('#cv-fit').value;
-  busy('#cv-go', true); await tick();
-  const completed = [];
-  try {
-    const pages = [], skipped = [];
-    for (let idx = 0; idx < fs.length; idx++) {
-      const f = fs[idx], pfx = fs.length > 1 ? `[${idx + 1}/${fs.length}] ` : '';
-      say(note, `${pfx}Working on ${f.name}…`); await tick();
-      if (isPdf(f)) {
-        if (to === 'pdf') { skipped.push(f.name); continue; }
-        const pp = await pdfPages(f, dpi, t => say(note, `${pfx}${t}`));
-        for (let i = 0; i < pp.length; i++) {
-          const b = await toBlob(pp[i].c, 'image/jpeg', q), name = stem(f) + (pp.length > 1 ? '-page' + (i + 1) : '') + '.jpg';
-          result(out, b, name); completed.push({ blob: b, name });
-        }
-      } else {
-        const c = await imgCanvas(f);
-        if (to === 'jpg') {
-          const b = await toBlob(c, 'image/jpeg', q), name = stem(f) + '.jpg';
-          result(out, b, name); completed.push({ blob: b, name });
-        } else pages.push(pageFor(c, fit));
-      }
-    }
-    if (pages.length) {
-      const b = toPdf(pages, q), name = (fs.length === 1 ? stem(fs[0]) : 'converted') + '.pdf';
-      result(out, b, name); completed.push({ blob: b, name });
-    }
-    addDownloadAll(out, completed, 'converted files');
-    say(note, 'Done.' + (skipped.length ? ' Skipped files that are already PDF: ' + skipped.join(', ') + '.' : ''));
-  } catch (e) { say(note, 'Could not convert: ' + (e.message || e)); }
-  busy('#cv-go', false);
-};
-
-/* ---------- compress (batch & single) ---------- */
-$('#cp-go').onclick = async () => {
-  const fs = picks.cp, out = $('#cp-out'), note = $('#cp-note'), kb = +$('#cp-kb').value;
-  out.replaceChildren();
-  if (!fs.length) return say(note, 'Choose at least one file to compress.');
-  if (!(kb >= 5)) return say(note, 'Enter a target size of at least 5 KB.');
-  busy('#cp-go', true); await tick();
-  const completed = [];
-  let underCount = 0, targetMetCount = 0;
-  try {
-    for (let i = 0; i < fs.length; i++) {
-      const f = fs[i], pfx = fs.length > 1 ? `[${i + 1}/${fs.length}] ` : '';
-      say(note, `${pfx}Compressing ${f.name}…`); await tick();
-
-      if (f.size <= kb * 1024) {
-        const name = stem(f) + (isPdf(f) ? '.pdf' : '.jpg');
-        result(out, f, name, `already ${fmt(f.size)} (under ${kb} KB target)`);
-        completed.push({ blob: f, name });
-        underCount++;
-        continue;
-      }
-
-      try {
-        let blob;
-        if (isPdf(f)) {
-          const pp = await pdfPages(f, 150, t => say(note, `${pfx}${f.name}: ${t}`));
-          say(note, `${pfx}Optimizing PDF ${f.name}…`); await tick();
-          blob = await pdfToSize(pp, kb);
-        } else {
-          blob = await jpegToSize(await imgCanvas(f), kb);
-        }
-        const name = stem(f) + '-compressed.' + (isPdf(f) ? 'pdf' : 'jpg');
-        const met = blob.size <= kb * 1024;
-        if (met) targetMetCount++;
-        result(out, blob, name, `was ${fmt(f.size)}${met ? '' : ' · best reached'}`);
-        completed.push({ blob, name });
-      } catch (err) {
-        const row = document.createElement('div');
-        row.className = 'res';
-        row.style.color = '#c93b2b';
-        row.textContent = `${f.name}: Failed — ${err.message || err}`;
-        out.append(row);
-      }
-    }
-    addDownloadAll(out, completed, 'compressed files');
-    const totalMet = targetMetCount + underCount;
-    if (fs.length === 1) {
-      const f = fs[0];
-      if (underCount === 1) say(note, `This file was already ${fmt(f.size)}, under your ${kb} KB target.`);
-      else if (targetMetCount === 1) say(note, 'Done. The file is under your target.');
-      else say(note, 'Smallest size reached, but still above target.');
-    } else {
-      say(note, `Done. Processed ${completed.length} of ${fs.length} file(s). ${totalMet} under ${kb} KB.`);
-    }
-  } catch (e) {
-    say(note, 'Could not compress: ' + (e.message || e));
-  }
-  busy('#cp-go', false);
-};
-
-$('#print').onclick = () => need() && run('#print', async () => {
-  const c = document.createElement('canvas'); compose(c, 200, false);
-  const img = $('#printImg'); img.src = c.toDataURL('image/jpeg', .95); await img.decode().catch(() => {});
-  window.print();
-});
-
-/* ---------- full screen editor ---------- */
-function mountThumb(s) {
-  s.thumb = document.createElement('canvas'); s.thumb.className = 'thumb'; s.thumb.title = 'Tap to edit the crop';
-  s.thumb.onclick = () => openEditor(s);
-  const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'center';
-  const b = document.createElement('button'); b.className = 'primary'; b.textContent = 'Edit crop'; b.onclick = () => openEditor(s);
-  row.append(b); s.cv.replaceWith(s.thumb); s.thumb.after(row);
-  ['pointerdown', 'pointermove'].forEach(t => s.cv.addEventListener(t, e => loupe(s, e)));
-  ['pointerup', 'pointercancel'].forEach(t => s.cv.addEventListener(t, () => { $('#loupe').hidden = true; }));
-}
-function drawThumb(s) {
-  if (!s.img || !s.thumb) return;
-  const w = 360, h = Math.max(40, Math.round(w / aspect(s, opt()))), c = cardCanvas(s, w, h);
-  s.thumb.width = w; s.thumb.height = h; s.thumb.getContext('2d').drawImage(c, 0, 0);
-}
-function syncModal() {
-  const s = MS.s; if (!s) return;
-  $('#m-hint').textContent = 'Drag the square corners onto the card corners. Drag the round dots on each edge to resize. Drag inside to move.';
-}
-function fit() {
-  const s = MS.s; if (!MS.open || !s) return;
-  draw(s);
-  const r = $('#m-stage').getBoundingClientRect(), k = Math.min((r.width - 24) / s.cv.width, (r.height - 24) / s.cv.height);
-  s.cv.style.width = Math.floor(s.cv.width * k) + 'px'; s.cv.style.height = Math.floor(s.cv.height * k) + 'px';
-  draw(s);
-}
-function openEditor(s) {
-  if (!s.img) return;
-  MS.s = s; MS.open = true;
-  MS.snap = { img: s.img, crop: { ...s.crop }, quad: s.quad.map(q => ({ ...q })), persp: s.persp };
-  $('#m-title').textContent = s.id === 'front' ? 'Front side' : 'Back side';
-  $('#m-stage').replaceChildren(s.cv);
-  $('#editor').hidden = false; document.body.classList.add('lock');
-  syncModal(); fit();
-}
-function closeEditor(commit) {
-  const s = MS.s; if (!s) return;
-  if (!commit) { const o = MS.snap; s.img = o.img; s.crop = o.crop; s.quad = o.quad; s.persp = o.persp; s.src = null; }
-  MS.open = false; MS.s = null; $('#editor').hidden = true; document.body.classList.remove('lock');
-  s.cv.style.width = ''; s.cv.style.height = ''; s.cv.remove();
-  preview();
-}
-function hullOf(pts) {
-  pts.sort((a, b) => a.x - b.x || a.y - b.y);
-  const cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x), lo = [], up = [];
-  for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
-  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
-  up.pop(); lo.pop(); return lo.concat(up);
-}
-function inter(a, b, c, d) {
-  const den = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x); if (Math.abs(den) < 1e-9) return null;
-  const t = ((c.x - a.x) * (d.y - c.y) - (c.y - a.y) * (d.x - c.x)) / den;
-  return t > 1 ? { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) } : null;
-}
-function toQuad(P) {
-  P = P.slice();
-  while (P.length > 4) {
-    const n = P.length; let best = null;
-    for (let i = 0; i < n; i++) {
-      const a = P[(i + n - 1) % n], b = P[i], c = P[(i + 1) % n], d = P[(i + 2) % n], X = inter(a, b, c, d); if (!X) continue;
-      const ar = Math.abs((b.x - X.x) * (c.y - X.y) - (c.x - X.x) * (b.y - X.y)) / 2;
-      if (!best || ar < best.ar) best = { i, X, ar };
-    }
-    if (!best) return P;
-    const j = (best.i + 1) % n; P = P.map((p, k) => k === best.i ? best.X : p).filter((p, k) => k !== j);
-  }
-  return P;
-}
-// Finds the card by separating it from the background colour, then fits a four-corner shape around it.
-function detectCard(img) {
-  const f = Math.min(1, 320 / Math.max(img.width, img.height)), w = Math.max(8, Math.round(img.width * f)), h = Math.max(8, Math.round(img.height * f));
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
-  const d = x.getImageData(0, 0, w, h).data, N = w * h, m = Math.max(2, Math.round(Math.min(w, h) * .03)), ring = [];
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (i < m || j < m || i >= w - m || j >= h - m) ring.push((j * w + i) * 4);
-  const med = ch => { const a = ring.map(p => d[p + ch]).sort((u, v) => u - v); return a[a.length >> 1]; };
-  const bg = [med(0), med(1), med(2)], dist = new Uint8Array(N), hist = new Array(256).fill(0);
-  for (let p = 0; p < N; p++) { const dr = d[p * 4] - bg[0], dg = d[p * 4 + 1] - bg[1], db = d[p * 4 + 2] - bg[2], v = Math.min(255, Math.round(Math.sqrt(dr * dr + dg * dg + db * db) * .58)); dist[p] = v; hist[v]++; }
-  let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
-  let sB = 0, wB = 0, best = -1, thr = 20;
-  for (let t = 0; t < 256; t++) { wB += hist[t]; if (!wB) continue; const wF = N - wB; if (!wF) break; sB += t * hist[t]; const mB = sB / wB, mF = (sum - sB) / wF, bt = wB * wF * (mB - mF) * (mB - mF); if (bt > best) { best = bt; thr = t; } }
-  thr = Math.max(14, thr);
-  const seen = new Uint8Array(N), q = new Int32Array(N); let bs = 0, bl = 0, head = 0;
-  for (let s0 = 0; s0 < N; s0++) {
-    if (seen[s0] || dist[s0] <= thr) continue;
-    const st = head; q[head++] = s0; seen[s0] = 1;
-    for (let k = st; k < head; k++) {
-      const p = q[k], px = p % w, py = (p / w) | 0;
-      if (px > 0 && !seen[p - 1] && dist[p - 1] > thr) { seen[p - 1] = 1; q[head++] = p - 1; }
-      if (px < w - 1 && !seen[p + 1] && dist[p + 1] > thr) { seen[p + 1] = 1; q[head++] = p + 1; }
-      if (py > 0 && !seen[p - w] && dist[p - w] > thr) { seen[p - w] = 1; q[head++] = p - w; }
-      if (py < h - 1 && !seen[p + w] && dist[p + w] > thr) { seen[p + w] = 1; q[head++] = p + w; }
-    }
-    if (head - st > bl) { bl = head - st; bs = st; }
-  }
-  if (bl < N * .12 || bl > N * .97) return null;
-  const inC = new Uint8Array(N); for (let k = 0; k < bl; k++) inC[q[bs + k]] = 1;
-  const pts = [];
-  for (let k = 0; k < bl; k++) {
-    const p = q[bs + k], px = p % w, py = (p / w) | 0;
-    if (px === 0 || py === 0 || px === w - 1 || py === h - 1 || !inC[p - 1] || !inC[p + 1] || !inC[p - w] || !inC[p + w]) pts.push({ x: px, y: py });
-  }
-  const hl = hullOf(pts); if (hl.length < 4) return null;
-  const P = toQuad(hl); if (P.length !== 4) return null;
-  const Q = P.map(p => ({ x: Math.max(0, Math.min(img.width, p.x / f)), y: Math.max(0, Math.min(img.height, p.y / f)) }));
-  const cx = Q.reduce((a, p) => a + p.x, 0) / 4, cy = Q.reduce((a, p) => a + p.y, 0) / 4;
-  Q.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
-  let i0 = 0; Q.forEach((p, i) => { if (p.x + p.y < Q[i0].x + Q[i0].y) i0 = i; });
-  return [0, 1, 2, 3].map(i => Q[(i0 + i) % 4]);
-}
-function autoSelect(s, silent, again) {
-  let q = null; try { q = detectCard(s.img); } catch (e) { q = null; }
-  if (!q) { if (!silent && MS.open) $('#m-hint').textContent = 'Could not find the card edges. Drag the corners onto the card.'; return false; }
-  const dd = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), cw = (dd(q[0], q[1]) + dd(q[3], q[2])) / 2, ch = (dd(q[0], q[3]) + dd(q[1], q[2])) / 2;
-  if (!again && ch > cw * 1.15) { rotate(s); return autoSelect(s, silent, true); }
-  const tilt = Math.max(...[[q[0], q[1]], [q[3], q[2]]].map(p => Math.abs(Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x))), ...[[q[0], q[3]], [q[1], q[2]]].map(p => Math.abs(Math.atan2(p[1].x - p[0].x, p[1].y - p[0].y)))) * 180 / Math.PI;
-  const xs = q.map(p => p.x), ys = q.map(p => p.y);
-  s.quad = q.map(p => ({ ...p }));
-  s.crop = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
-  if (tilt > 3) { s.persp = true; s.el.querySelector('[data-act=persp]').setAttribute('aria-pressed', 'true'); }
-  if (MS.open) { fit(); syncModal(); preview(); }
-  return true;
-}
-// Magnifier shown while a corner is being dragged, so it can be placed precisely.
-function loupe(s, e) {
-  const L = $('#loupe'), m = s.mode;
-  if (!MS.open || !m || m.t === 'move') { L.hidden = true; return; }
-  const c = s.crop, rect = [{ x: c.x, y: c.y }, { x: c.x + c.w, y: c.y }, { x: c.x + c.w, y: c.y + c.h }, { x: c.x, y: c.y + c.h }];
-  const poly = s.persp ? s.quad : rect;
-  const p = m.t === 'vert' ? s.quad[m.i] : m.t === 'edge' ? { x: (s.quad[m.i].x + s.quad[(m.i + 1) % 4].x) / 2, y: (s.quad[m.i].y + s.quad[(m.i + 1) % 4].y) / 2 } : ({ tl: rect[0], tr: rect[1], br: rect[2], bl: rect[3] })[m.h.n];
-  const S = 300, ds = (s.cv.clientWidth / s.img.width) || 1, sw = 150 / 4 / ds, x0 = p.x - sw / 2, y0 = p.y - sw / 2, k = S / sw;
-  L.width = S; L.height = S; const x = L.getContext('2d');
-  x.fillStyle = '#000'; x.fillRect(0, 0, S, S); x.imageSmoothingQuality = 'high';
-  x.drawImage(s.img, x0, y0, sw, sw, 0, 0, S, S);
-  x.strokeStyle = '#3cc2b0'; x.lineWidth = 2; x.beginPath();
-  poly.forEach((q, i) => i ? x.lineTo((q.x - x0) * k, (q.y - y0) * k) : x.moveTo((q.x - x0) * k, (q.y - y0) * k)); x.closePath(); x.stroke();
-  x.strokeStyle = '#fff'; x.lineWidth = 1; x.beginPath(); x.moveTo(S / 2, S / 2 - 22); x.lineTo(S / 2, S / 2 + 22); x.moveTo(S / 2 - 22, S / 2); x.lineTo(S / 2 + 22, S / 2); x.stroke();
-  const r = $('#m-stage').getBoundingClientRect(); let left = r.left + 10; const top = r.top + 10;
-  if (e.clientX < left + 210 && e.clientY < top + 210) left = r.right - 160;
-  L.style.left = left + 'px'; L.style.top = top + 'px'; L.hidden = false;
-}
-$('#m-auto').onclick = () => MS.s && autoSelect(MS.s, false);
-$('#m-rot').onclick = () => { const s = MS.s; if (s) { s.el.querySelector('[data-act=rot]').click(); fit(); } };
-$('#m-reset').onclick = () => { const s = MS.s; if (s) { initCrop(s); syncModal(); fit(); preview(); } };
-$('#m-cancel').onclick = () => closeEditor(false);
-$('#m-done').onclick = () => closeEditor(true);
-addEventListener('keydown', e => { if (e.key === 'Escape' && MS.open) closeEditor(false); });
-
-/* ---------- tabs & routing ---------- */
-const PAGES = ['home', 'a4', 'convert', 'compress'];
-const ALIASES = { 'a4-id': 'a4', 'id': 'a4', 'home': 'home', '': 'home' };
-const TITLES = {
-  home: 'Card & File Tools — Free & Private In-Browser Tools',
-  a4: 'ID Card to A4 — Fit & Print ID Cards',
-  convert: 'Convert Files — PDF & Image Converter',
-  compress: 'Compress Files — Target Size Optimizer'
-};
-function route() {
-  const raw = (location.hash.slice(1) || '').trim().toLowerCase();
-  const p = ALIASES[raw] || (PAGES.includes(raw) ? raw : 'home');
-  PAGES.forEach(n => {
-    const el = $('#p-' + n);
-    if (el) el.hidden = (n !== p);
-    const tab = document.querySelector(`[data-tab="${n}"]`);
-    if (tab) tab.setAttribute('aria-selected', n === p);
-  });
-  document.title = TITLES[p] || 'Card & File Tools';
-  if (p === 'a4') {
-    ids.forEach(i => slots[i].img && draw(slots[i]));
-    fit();
-    preview();
-  }
-}
-addEventListener('hashchange', route); route();
-</script>
+  <!-- Application Logic -->
+  <script src="app.js" defer></script>
 </body>
 </html>

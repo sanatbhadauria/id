@@ -1,0 +1,1000 @@
+/**
+ * Card & File Tools — Stylesheet
+ * 
+ * Sections:
+ * 1. CSS Custom Properties & Themes (Light / Dark)
+ * 2. Reset & Base Typography
+ * 3. App Header & Navigation Bar
+ * 4. Breadcrumbs & Page Headings
+ * 5. Home Dashboard Page (Hero, Tool Grid & Features)
+ * 6. Main Layouts & Card Panels
+ * 7. Drag-and-Drop Zones & File Inputs
+ * 8. Form Controls, Sliders & Action Buttons
+ * 9. A4 Sheet Preview & Page Sidebar
+ * 10. Full-Screen Crop & Perspective Editor Modal
+ * 11. Magnifier Loupe
+ * 12. Processing Results & Status Messages
+ * 13. Responsive Breakpoints (Tablets & Mobile)
+ * 14. Print Media Stylesheet (100% Scale A4 Output)
+ */
+
+/* ==========================================================================
+   1. CSS Custom Properties & Themes
+   ========================================================================== */
+:root {
+  --bg: #e8ecef;
+  --panel: #ffffff;
+  --ink: #16202b;
+  --muted: #5d6b78;
+  --line: #cfd7de;
+  --accent: #0b6e63;
+  --accent-ink: #ffffff;
+  --page: #ffffff;
+  --shadow: 0 1px 2px rgba(22, 32, 43, 0.12), 0 12px 32px rgba(22, 32, 43, 0.12);
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Automatic Dark Theme based on system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161c;
+    --panel: #192129;
+    --ink: #e8eef3;
+    --muted: #93a3b1;
+    --line: #2b3742;
+    --accent: #3cc2b0;
+    --accent-ink: #06211d;
+    --page: #ffffff;
+    --shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+/* Explicit Dark Theme override */
+:root[data-theme="dark"] {
+  --bg: #10161c;
+  --panel: #192129;
+  --ink: #e8eef3;
+  --muted: #93a3b1;
+  --line: #2b3742;
+  --accent: #3cc2b0;
+  --accent-ink: #06211d;
+  --page: #ffffff;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   2. Reset & Base Typography
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Lock scrolling when modals are open */
+body.lock {
+  overflow: hidden;
+}
+
+/* Status bar notch fill for mobile devices */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  background: #0d1b24;
+  z-index: 12;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   3. App Header & Navigation Bar
+   ========================================================================== */
+.bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 11;
+  background: linear-gradient(135deg, #0d1b24, #12303a);
+  color: #eef4f7;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bar-in {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand svg {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+
+.brand b {
+  display: block;
+  font-size: 19px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.brand small {
+  display: block;
+  font-size: 13px;
+  color: #9fb6c2;
+}
+
+nav.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+nav.tabs a {
+  padding: 8px 14px;
+  border-radius: 9px;
+  color: #cfe0e8;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+nav.tabs a:hover {
+  color: #ffffff;
+}
+
+nav.tabs a:focus-visible {
+  outline: 3px solid #3cc2b0;
+  outline-offset: 2px;
+}
+
+nav.tabs a[aria-selected="true"] {
+  background: #ffffff;
+  color: #10202b;
+}
+
+/* ==========================================================================
+   4. Breadcrumbs & Page Headings
+   ========================================================================== */
+.tool-crumb {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.tool-crumb a {
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.tool-crumb a:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.tool-crumb .crumb-sep {
+  opacity: 0.4;
+}
+
+.tool-crumb .crumb-cur {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   5. Home Dashboard Page (Hero, Tool Grid & Features)
+   ========================================================================== */
+#p-home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+  display: block;
+}
+
+.hero {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 36px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(11, 110, 99, 0.12);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+:root[data-theme="dark"] .hero-badge,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero-badge {
+    background: rgba(60, 194, 176, 0.15);
+  }
+}
+
+.hero h1 {
+  font-size: clamp(28px, 4.5vw, 44px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+
+.hero p {
+  font-size: clamp(16px, 2vw, 18px);
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 auto;
+  max-width: 660px;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 24px;
+  margin-bottom: 44px;
+}
+
+.tool-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tool-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.tool-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.tool-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(11, 110, 99, 0.1);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .tool-icon-wrap,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tool-icon-wrap {
+    background: rgba(60, 194, 176, 0.14);
+  }
+}
+
+.tool-tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.tool-tag.featured {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.tool-card h2 {
+  font-size: 21px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.tool-desc {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0 0 20px;
+  flex: 1;
+}
+
+.tool-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.tool-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.tool-features li svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.tool-action {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+.tool-action .arrow {
+  transition: transform 0.2s ease;
+}
+
+.tool-card:hover .tool-action .arrow {
+  transform: translateX(5px);
+}
+
+.features-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px 28px;
+  margin-bottom: 36px;
+}
+
+.features-title {
+  text-align: center;
+  margin: 0 0 28px;
+}
+
+.features-title h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.features-title p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.features-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.feature-box {
+  display: flex;
+  gap: 16px;
+}
+
+.feature-box-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.feature-box h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.feature-box p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.home-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ==========================================================================
+   6. Main Layouts & Card Panels
+   ========================================================================= */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 24px;
+  align-items: start;
+}
+
+main.single {
+  grid-template-columns: 1fr;
+  max-width: 760px;
+}
+
+.col {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.row.no-margin {
+  margin: 0;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+/* ==========================================================================
+   7. Drag-and-Drop Zones & File Inputs
+   ========================================================================== */
+.drop {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 170px;
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 16px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.drop:hover,
+.drop.over,
+.drop:focus-visible {
+  border-color: var(--accent);
+  color: var(--ink);
+  outline: none;
+}
+
+.drop b {
+  display: block;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.drop .drop-subhint {
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.editor {
+  display: none;
+}
+
+.thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.thumb:hover {
+  opacity: 0.92;
+}
+
+.editor > .hint,
+[data-slot] h2 [data-act="persp"],
+[data-slot] h2 [data-act="rot"] {
+  display: none;
+}
+
+/* ==========================================================================
+   8. Form Controls, Sliders & Action Buttons
+   ========================================================================== */
+button,
+.btn {
+  font: inherit;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button.primary,
+button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0 4px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  grid-column: 1 / -1;
+  cursor: pointer;
+}
+
+label.span-full {
+  grid-column: 1 / -1;
+}
+
+input[type="number"],
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions button {
+  flex: 1 1 140px;
+}
+
+.adj {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.adj summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sliders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  margin: 10px 0 0;
+}
+
+.sliders input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+/* ==========================================================================
+   9. A4 Sheet Preview & Page Sidebar
+   ========================================================================== */
+.side {
+  position: sticky;
+  top: calc(72px + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 901px) {
+  .side {
+    max-height: calc(100vh - 84px);
+    overflow: auto;
+  }
+}
+
+.sheet {
+  background: var(--page);
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  display: block;
+}
+
+/* ==========================================================================
+   10. Full-Screen Crop & Perspective Editor Modal
+   ========================================================================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 50;
+  background: #0b1217;
+  color: #eef4f7;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.m-top,
+.m-bot {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #12202b;
+}
+
+.m-top b {
+  margin-right: auto;
+}
+
+.m-bot {
+  justify-content: space-between;
+}
+
+.m-bot > div {
+  display: flex;
+  gap: 8px;
+}
+
+.m-hint {
+  font-size: 14px;
+  color: #9fb6c2;
+  flex: 1 1 200px;
+}
+
+.m-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.m-stage canvas {
+  flex: none;
+  touch-action: none;
+  background: #000000;
+  border-radius: 4px;
+}
+
+.seg {
+  display: flex;
+  gap: 4px;
+}
+
+.modal button {
+  background: #1c2f3b;
+  color: #eef4f7;
+  border-color: #2f4756;
+}
+
+.modal button.primary {
+  background: #3cc2b0;
+  color: #06211d;
+  border-color: #3cc2b0;
+}
+
+.modal button[aria-pressed="true"] {
+  background: #ffffff;
+  color: #10202b;
+  border-color: #ffffff;
+}
+
+/* ==========================================================================
+   11. Magnifier Loupe
+   ========================================================================== */
+#loupe {
+  position: fixed;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  z-index: 60;
+  pointer-events: none;
+  background: #000000;
+}
+
+/* ==========================================================================
+   12. Processing Results & Status Messages
+   ========================================================================== */
+.res {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.res.batch-header {
+  background: rgba(11, 110, 99, 0.08);
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-top: none;
+}
+
+.res.error-msg {
+  color: #c93b2b;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 10px 0 0;
+  min-height: 1.4em;
+}
+
+/* ==========================================================================
+   13. Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 900px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .bar {
+    position: static;
+  }
+  .bar-in {
+    padding: 10px 14px;
+  }
+  .brand small {
+    display: none;
+  }
+  nav.tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  nav.tabs a {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  #p-home {
+    padding: 20px 14px 40px;
+  }
+  .hero {
+    margin-bottom: 24px;
+  }
+  .hero-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .tool-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .tool-card {
+    padding: 20px;
+  }
+  .features-section {
+    padding: 22px 16px;
+  }
+  .features-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  main {
+    padding: 12px 14px 32px;
+    gap: 16px;
+  }
+  .card {
+    padding: 12px;
+  }
+  button,
+  .btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  input[type="number"],
+  select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .sliders {
+    grid-template-columns: 1fr;
+  }
+  .sliders input {
+    height: 30px;
+  }
+  .drop {
+    min-height: 140px;
+  }
+  .card h2 {
+    flex-wrap: wrap;
+  }
+}
+
+/* ==========================================================================
+   14. Print Media Stylesheet (100% Scale A4 Output)
+   ========================================================================== */
+#printArea {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  :root {
+    padding: 0;
+  }
+  body {
+    background: #ffffff;
+  }
+  body::before {
+    display: none;
+  }
+  body > *:not(#printArea) {
+    display: none !important;
+  }
+  #printArea {
+    display: block;
+  }
+  #printImg {
+    display: block;
+    width: 210mm;
+    height: 297mm;
+  }
+}
