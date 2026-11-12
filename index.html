@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ID card to A4</title>
+<title>Card &amp; File Tools — Free &amp; Private In-Browser Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -86,12 +86,62 @@ button:disabled{opacity:.6;cursor:progress}
   #printArea{display:block}
   #printImg{display:block;width:210mm;height:297mm}
 }
+/* Breadcrumbs */
+.tool-crumb{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:4px}
+.tool-crumb a{color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:500;padding:5px 10px;border-radius:6px;background:var(--panel);border:1px solid var(--line);transition:border-color .15s,color .15s}
+.tool-crumb a:hover{color:var(--ink);border-color:var(--accent)}
+.tool-crumb .crumb-sep{opacity:.4}
+.tool-crumb .crumb-cur{color:var(--ink);font-weight:600}
+
+/* Home Page */
+#p-home{max-width:1200px;margin:0 auto;padding:28px 20px 60px;display:block}
+.hero{text-align:center;max-width:780px;margin:0 auto 36px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(11,110,99,.12);color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin-bottom:16px}
+:root[data-theme="dark"] .hero-badge{background:rgba(60,194,176,.15)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero-badge{background:rgba(60,194,176,.15)}}
+.hero h1{font-size:clamp(28px,4.5vw,44px);font-weight:700;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;color:var(--ink)}
+.hero p{font-size:clamp(16px,2vw,18px);line-height:1.6;color:var(--muted);margin:0 auto;max-width:660px}
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:24px;margin-bottom:44px}
+.tool-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;text-decoration:none;color:inherit}
+.tool-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
+.tool-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.tool-icon-wrap{width:52px;height:52px;border-radius:12px;background:rgba(11,110,99,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+:root[data-theme="dark"] .tool-icon-wrap{background:rgba(60,194,176,.14)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tool-icon-wrap{background:rgba(60,194,176,.14)}}
+.tool-tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.tool-tag.featured{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tool-card h2{font-size:21px;font-weight:700;margin:0 0 10px;color:var(--ink)}
+.tool-desc{font-size:15px;line-height:1.55;color:var(--muted);margin:0 0 20px;flex:1}
+.tool-features{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:10px}
+.tool-features li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink)}
+.tool-features li svg{flex-shrink:0;color:var(--accent)}
+.tool-action{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--line);font-weight:600;font-size:15px;color:var(--accent)}
+.tool-action .arrow{transition:transform .2s ease}
+.tool-card:hover .tool-action .arrow{transform:translateX(5px)}
+.features-section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:32px 28px;margin-bottom:36px}
+.features-title{text-align:center;margin:0 0 28px}
+.features-title h3{font-size:20px;font-weight:700;margin:0 0 6px;color:var(--ink)}
+.features-title p{color:var(--muted);font-size:14px;margin:0}
+.features-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
+.feature-box{display:flex;gap:16px}
+.feature-box-icon{width:42px;height:42px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+.feature-box h4{margin:0 0 6px;font-size:16px;font-weight:700;color:var(--ink)}
+.feature-box p{margin:0;font-size:14px;line-height:1.5;color:var(--muted)}
+.home-footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px;border-top:1px solid var(--line)}
+
 @media (max-width:600px){
   .bar{position:static}
   .bar-in{padding:10px 14px}
   .brand small{display:none}
-  nav.tabs{width:100%}
-  nav.tabs a{flex:1;justify-content:center;min-height:44px}
+  nav.tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  nav.tabs a{flex:0 0 auto;min-height:40px;padding:6px 12px;font-size:14px}
+  #p-home{padding:20px 14px 40px}
+  .hero{margin-bottom:24px}
+  .hero-badge{font-size:11px;padding:4px 10px}
+  .tool-grid{grid-template-columns:1fr;gap:16px;margin-bottom:28px}
+  .tool-card{padding:20px}
+  .features-section{padding:22px 16px}
+  .features-row{grid-template-columns:1fr;gap:18px}
   main{padding:12px 14px 32px;gap:16px}
   .card{padding:12px}
   button,.btn{min-height:44px;padding:10px 14px}
@@ -106,14 +156,155 @@ button:disabled{opacity:.6;cursor:progress}
 <body>
 <header class="bar">
   <div class="bar-in">
-    <a class="brand" href="#a4">
+    <a class="brand" href="#home">
       <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="8" width="36" height="24" rx="5" fill="#3cc2b0"/><circle cx="13" cy="18" r="4" fill="#10202b"/><path d="M7 27c1-4 5-5 6-5s5 1 6 5z" fill="#10202b"/><rect x="23" y="15" width="11" height="2.5" rx="1.2" fill="#10202b"/><rect x="23" y="21" width="8" height="2.5" rx="1.2" fill="#10202b"/></svg>
       <span><b>Card and file tools</b><small>Private. Everything runs in your browser.</small></span>
     </a>
-    <nav class="tabs" aria-label="Tools"><a href="#a4" data-tab="a4">ID card to A4</a><a href="#convert" data-tab="convert">Convert</a><a href="#compress" data-tab="compress">Compress</a></nav>
+    <nav class="tabs" aria-label="Tools">
+      <a href="#home" data-tab="home">Home</a>
+      <a href="#a4-id" data-tab="a4">ID card to A4</a>
+      <a href="#convert" data-tab="convert">Convert</a>
+      <a href="#compress" data-tab="compress">Compress</a>
+    </nav>
   </div>
 </header>
-<main id="p-a4">
+<main id="p-home">
+  <div class="hero">
+    <div class="hero-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Private &amp; Client-Side &bull; No Server Uploads
+    </div>
+    <h1>Card &amp; Document Tools</h1>
+    <p>Fast, reliable tools for your ID cards and documents. Everything processes securely in your browser without leaving your device.</p>
+  </div>
+
+  <div class="tool-grid">
+    <a href="#a4-id" class="tool-card">
+      <div class="tool-card-head">
+        <div class="tool-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <rect x="6" y="6" width="12" height="6" rx="1"/>
+            <line x1="6" y1="15" x2="11" y2="15"/>
+            <line x1="6" y1="18" x2="18" y2="18"/>
+          </svg>
+        </div>
+        <span class="tool-tag featured">Popular</span>
+      </div>
+      <h2>ID card to A4</h2>
+      <p class="tool-desc">Place front and back ID photos onto a single A4 page with true physical dimensions (85.6 × 54 mm), ready to print or save.</p>
+      <ul class="tool-features">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 4-corner perspective crop &amp; auto detection</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Accurate 100% scale A4 layout &amp; cut guides</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> B&amp;W, document filter, brightness &amp; contrast</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Print directly or export as PDF, JPEG, or PNG</li>
+      </ul>
+      <div class="tool-action">
+        <span>Open ID card tool</span>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="#convert" class="tool-card">
+      <div class="tool-card-head">
+        <div class="tool-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 16V4M7 4L3 8M7 4l4 4"/>
+            <path d="M17 8v12M17 20l4-4M17 20l-4-4"/>
+          </svg>
+        </div>
+        <span class="tool-tag">Batch tool</span>
+      </div>
+      <h2>Convert Files</h2>
+      <p class="tool-desc">Seamlessly switch between PDF and image formats with customizable resolution, DPI, and quality parameters.</p>
+      <ul class="tool-features">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Convert multi-page PDF files into JPG images</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Compile JPG, PNG, and WebP into one PDF</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Selectable DPI (100, 150, 200, 300)</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Choose A4 page fit or original image aspect</li>
+      </ul>
+      <div class="tool-action">
+        <span>Open file converter</span>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="#compress" class="tool-card">
+      <div class="tool-card-head">
+        <div class="tool-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 14 10 14 10 20"/>
+            <polyline points="20 10 14 10 14 4"/>
+            <line x1="14" y1="10" x2="21" y2="3"/>
+            <line x1="3" y1="21" x2="10" y2="14"/>
+          </svg>
+        </div>
+        <span class="tool-tag">Target size</span>
+      </div>
+      <h2>Compress Files</h2>
+      <p class="tool-desc">Reduce large PDF and image files to meet strict upload size limits (e.g. 100 KB, 200 KB) required by application portals.</p>
+      <ul class="tool-features">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Specify exact target file size in KB</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Intelligent multi-pass optimization</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Supports PDF, JPG, PNG, and WebP</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Instant before &amp; after size reporting</li>
+      </ul>
+      <div class="tool-action">
+        <span>Open file compressor</span>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+  </div>
+
+  <section class="features-section">
+    <div class="features-title">
+      <h3>Why use these tools?</h3>
+      <p>Designed for privacy, speed, and standard document workflows</p>
+    </div>
+    <div class="features-row">
+      <div class="feature-box">
+        <div class="feature-box-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div>
+          <h4>100% Private</h4>
+          <p>Files never leave your computer. Processing happens entirely in your local browser sandbox.</p>
+        </div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-box-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div>
+          <h4>Instant &amp; Free</h4>
+          <p>No waiting queues, file uploads, subscriptions, or watermarks. Works at device speed.</p>
+        </div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-box-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </div>
+        <div>
+          <h4>Print &amp; Portal Ready</h4>
+          <p>Built-in millimeter precision for physical printing and strict KB targeting for online forms.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="home-footer">
+    <p>Card &amp; File Tools &bull; Single-page static app &bull; Zero remote servers</p>
+  </footer>
+</main>
+<main id="p-a4" hidden>
+  <div class="tool-crumb">
+    <a href="#home">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All tools
+    </a>
+    <span class="crumb-sep">/</span>
+    <span class="crumb-cur">ID card to A4</span>
+  </div>
   <div class="col">
     <section class="card" data-slot="front">
       <h2>Front side <span class="row" style="margin:0"><button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button><button data-act="rot">Rotate 90°</button><button data-act="clear">Remove</button></span></h2>
@@ -152,6 +343,14 @@ button:disabled{opacity:.6;cursor:progress}
   </aside>
 </main>
 <main id="p-convert" class="single" hidden>
+  <div class="tool-crumb">
+    <a href="#home">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All tools
+    </a>
+    <span class="crumb-sep">/</span>
+    <span class="crumb-cur">Convert</span>
+  </div>
   <section class="card">
     <h2>Convert files</h2>
     <div class="drop" id="cv-drop" tabindex="0" role="button" aria-label="Choose files to convert"><div><b>Drop PDF, JPG, PNG or WebP files</b>or tap to choose (you can pick several)</div></div>
@@ -168,6 +367,14 @@ button:disabled{opacity:.6;cursor:progress}
   </section>
 </main>
 <main id="p-compress" class="single" hidden>
+  <div class="tool-crumb">
+    <a href="#home">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All tools
+    </a>
+    <span class="crumb-sep">/</span>
+    <span class="crumb-cur">Compress</span>
+  </div>
   <section class="card">
     <h2>Compress a file</h2>
     <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose a file to compress"><div><b>Drop a PDF, JPG, PNG or WebP file</b>or tap to choose</div></div>
@@ -745,12 +952,30 @@ $('#m-cancel').onclick = () => closeEditor(false);
 $('#m-done').onclick = () => closeEditor(true);
 addEventListener('keydown', e => { if (e.key === 'Escape' && MS.open) closeEditor(false); });
 
-/* ---------- tabs ---------- */
-const PAGES = ['a4', 'convert', 'compress'];
+/* ---------- tabs & routing ---------- */
+const PAGES = ['home', 'a4', 'convert', 'compress'];
+const ALIASES = { 'a4-id': 'a4', 'id': 'a4', 'home': 'home', '': 'home' };
+const TITLES = {
+  home: 'Card & File Tools — Free & Private In-Browser Tools',
+  a4: 'ID Card to A4 — Fit & Print ID Cards',
+  convert: 'Convert Files — PDF & Image Converter',
+  compress: 'Compress Files — Target Size Optimizer'
+};
 function route() {
-  const h = location.hash.slice(1), p = PAGES.includes(h) ? h : 'a4';
-  PAGES.forEach(n => { $('#p-' + n).hidden = n !== p; document.querySelector(`[data-tab=${n}]`).setAttribute('aria-selected', n === p); });
-  if (p === 'a4') ids.forEach(i => slots[i].img && draw(slots[i]));
+  const raw = (location.hash.slice(1) || '').trim().toLowerCase();
+  const p = ALIASES[raw] || (PAGES.includes(raw) ? raw : 'home');
+  PAGES.forEach(n => {
+    const el = $('#p-' + n);
+    if (el) el.hidden = (n !== p);
+    const tab = document.querySelector(`[data-tab="${n}"]`);
+    if (tab) tab.setAttribute('aria-selected', n === p);
+  });
+  document.title = TITLES[p] || 'Card & File Tools';
+  if (p === 'a4') {
+    ids.forEach(i => slots[i].img && draw(slots[i]));
+    fit();
+    preview();
+  }
 }
 addEventListener('hashchange', route); route();
 </script>

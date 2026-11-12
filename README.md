@@ -1,49 +1,31 @@
-# ID card to A4
+# Card & File Tools (ID card to A4, Convert, Compress)
 
-A small browser-based tool for turning front and back ID card photos into a single A4 page ready to print.
+A fast, private, browser-based suite of tools for identity cards and documents. Everything processes 100% locally on your device with zero server uploads.
 
-Add the front and back images, crop each to the card edges, fine-tune the layout, and export a print-ready PDF, JPEG, or PNG without leaving the browser.
+## Tools Included
+
+- **Home Page (`#home`)**: Central dashboard providing direct access, descriptions, and feature overviews for all available tools.
+- **ID Card to A4 (`#a4-id` or `#a4`)**: Place front and back ID photos onto a single A4 page with true physical scale (85.6 × 54 mm), perspective warp, auto card edge detection, image filters, cutting guides, and print / PDF / JPEG / PNG export.
+- **Convert Files (`#convert`)**: Batch convert multi-page PDFs to high-DPI JPG images, or compile multiple JPG, PNG, and WebP images into a single PDF.
+- **Compress Files (`#compress`)**: Multi-pass compression for PDFs and images to meet strict target file sizes in KB (e.g., 100 KB or 200 KB) for online application portals.
 
 ## Features
 
-- Upload front and back card images
-- Crop and align each side to the exact card area
-- Adjust brightness, contrast, color, sharpness, and flip/rotate options
-- Choose A4 layout: stacked or side-by-side
-- Keep the card shape with rounded corners and cut guide lines
-- Print directly at 100% scale or download the final result
-- Extra tools for converting and compressing files
+- **100% Client-Side Privacy**: Files never leave your browser sandbox.
+- **Instant Processing**: Powered by client-side Canvas and WebAssembly.
+- **Navigation & Routing**: Clean URL hash navigation (`#home`, `#a4-id`, `#convert`, `#compress`) with persistent breadcrumbs and dynamic page titles.
+- **Responsive & Dark Mode**: Adapts across mobile, tablet, and desktop with automatic light/dark theme support.
 
-## How to use
+## How to Use
 
-1. Open `index.html` in a browser, or serve the project locally.
-2. Add the front and back card images.
-3. Drag the crop box to position and resize each photo.
-4. Adjust filters and layout settings in the right panel.
-5. Click `Print` or download as PDF, JPEG, or PNG.
+1. Open `index.html` directly in a browser, or run a local server:
+   ```bash
+   python -m http.server 8000
+   ```
+2. Navigate to `http://localhost:8000`.
+3. Choose the tool you need from the home page cards or the top navigation bar.
 
-## Run locally
+## Notes & Printing Tips
 
-You can open the page directly in a browser, or run a simple local server:
-
-```bash
-python -m http.server 8000
-```
-
-Then visit:
-
-```text
-http://localhost:8000
-```
-
-## Printing tips
-
-- Use the browser print dialog with the page scaled to 100%.
-- Do not use “fit to page” or “shrink to printable area”.
-- The layout is designed to keep the card size accurate when printed on A4.
-
-## Notes
-
-- Everything runs in the browser.
-- No files are uploaded to a remote server.
-- This project is a single-page static web app built with HTML, CSS, and JavaScript.
+- **Print Scale**: When printing from the ID card tool, ensure your browser print dialog is set to **100% scale** (do not select "Fit to page" or "Shrink to printable area") to preserve physical card dimensions.
+- **Offline Capable**: Once loaded in your browser, the tools work entirely offline.
