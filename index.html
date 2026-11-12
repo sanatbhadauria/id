@@ -241,6 +241,7 @@
         <h2>
           Front side
           <span class="row no-margin">
+            <button data-act="preview" title="View front card in full screen">Full screen</button>
             <button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button>
             <button data-act="rot">Rotate 90°</button>
             <button data-act="clear">Remove</button>
@@ -264,6 +265,7 @@
         <h2>
           Back side
           <span class="row no-margin">
+            <button data-act="preview" title="View back card in full screen">Full screen</button>
             <button data-act="persp" aria-pressed="false" title="Straighten a photo taken at an angle">Perspective</button>
             <button data-act="rot">Rotate 90°</button>
             <button data-act="clear">Remove</button>
@@ -290,8 +292,18 @@
 
     <!-- A4 Live Preview Sidebar -->
     <aside class="side card">
-      <h2>A4 page</h2>
-      <canvas id="sheet" class="sheet"></canvas>
+      <h2>
+        A4 page
+        <button id="fullscreen-sheet" class="btn" title="View A4 page in full screen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>Full screen
+        </button>
+      </h2>
+      <canvas id="sheet" class="sheet" title="Click to view full screen preview" style="cursor: pointer;"></canvas>
 
       <div class="controls">
         <label>Card width (mm)<input id="cw" type="number" min="30" max="200" step="0.1" value="85.6"></label>
@@ -426,6 +438,51 @@
       <div>
         <button id="m-cancel">Cancel</button>
         <button class="primary" id="m-done">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Full-Screen Card & Sheet Preview Modal
+       ========================================================================= -->
+  <div id="card-preview-modal" class="modal preview-modal" role="dialog" aria-modal="true" aria-label="Full screen preview" hidden>
+    <div class="m-top">
+      <div class="preview-title-group">
+        <b id="pv-title">Front side — Full screen preview</b>
+        <span class="preview-subtitle" id="pv-subtitle">High resolution view</span>
+      </div>
+      <div class="seg" id="pv-side-switcher">
+        <button data-pv="front" class="pv-tab" aria-pressed="true">Front</button>
+        <button data-pv="back" class="pv-tab" aria-pressed="false">Back</button>
+        <button data-pv="a4" class="pv-tab" aria-pressed="false">A4 Sheet</button>
+      </div>
+      <div class="seg pv-zoom-controls">
+        <button id="pv-zoom-out" title="Zoom out" aria-label="Zoom out">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span id="pv-zoom-level" class="pv-zoom-text">100%</span>
+        <button id="pv-zoom-in" title="Zoom in" aria-label="Zoom in">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="pv-zoom-fit" title="Fit to screen">Fit</button>
+      </div>
+      <button id="pv-close" class="pv-close-btn" title="Close full screen preview (Esc)" aria-label="Close full screen preview">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="pv-stage" id="pv-stage">
+      <div class="pv-stage-inner" id="pv-stage-inner">
+        <canvas id="pv-canvas"></canvas>
+      </div>
+    </div>
+    <div class="m-bot">
+      <div class="pv-info">
+        <span id="pv-dimensions">85.6 × 54 mm (Physical Scale)</span>
+      </div>
+      <div class="actions pv-actions">
+        <button id="pv-edit-crop" class="btn">Edit crop</button>
+        <button id="pv-download" class="primary">Download image</button>
+        <button id="pv-done" class="btn">Close</button>
       </div>
     </div>
   </div>

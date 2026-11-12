@@ -6,6 +6,7 @@
  * - 4-corner perspective correction with projective bilinear warping
  * - Auto card edge detection (background separation, Otsu thresholding, convex hull, quad fit)
  * - Interactive full-screen editor with corner loupe magnifier
+ * - Full-screen inspection preview in card section with zoom, pan, and side switching
  * - Color grading & document filters (B&W, document contrast, brightness, sharpening)
  * - Batch PDF and image conversion (PDF to JPG, images to PDF with A4 fit)
  * - Batch target-size file compressor (binary search quality + dimensional downscaling)
@@ -30,11 +31,25 @@ const SLOT_IDS = ['front', 'back'];
 /** Per-slot runtime state store */
 const slots = {};
 
-/** Modal editor state */
+/** Modal editor state (for crop & perspective adjustment) */
 const modalState = {
   currentSlot: null,
   snapshot: null,
   isOpen: false
+};
+
+/** Full-screen card and sheet preview state */
+const previewModalState = {
+  isOpen: false,
+  target: 'front', // 'front' | 'back' | 'a4'
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  isPanning: false,
+  startPointerX: 0,
+  startPointerY: 0,
+  basePanX: 0,
+  basePanY: 0
 };
 
 /** RequestAnimationFrame ID for debounced sheet preview rendering */
@@ -132,6 +147,17 @@ SLOT_IDS.forEach(slotId => {
   });
 
   // Action buttons inside card headers
+  const previewHeaderBtn = container.querySelector('[data-act="preview"]');
+  if (previewHeaderBtn) {
+    previewHeaderBtn.addEventListener('click', () => {
+      if (slot.img) {
+        openPreviewModal(slotId);
+      } else {
+        alert('Please add a card image first.');
+      }
+    });
+  }
+
   const clearBtn = container.querySelector('[data-act="clear"]');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
@@ -184,6 +210,21 @@ SLOT_IDS.forEach(slotId => {
 
 // Setup filter adjustments panel
 initAdjustmentsPanel();
+
+// A4 sheet full screen triggers
+const fullscreenSheetBtn = $('#fullscreen-sheet');
+if (fullscreenSheetBtn) {
+  fullscreenSheetBtn.addEventListener('click', () => {
+    if (hasLoadedCard()) openPreviewModal('a4');
+  });
+}
+
+const sheetCanvas = $('#sheet');
+if (sheetCanvas) {
+  sheetCanvas.addEventListener('click', () => {
+    if (hasLoadedCard()) openPreviewModal('a4');
+  });
+}
 
 /* ==========================================================================
    4. Image Loading & Crop Initialization
@@ -381,13 +422,11 @@ function bindCanvasEvents(slot) {
 
   const testHit = pt => {
     if (slot.persp) {
-      // Test 4 corner vertices
       const vertIndex = slot.quad.findIndex(
         q => Math.abs(q.x - pt.x) < pt.hitRadius && Math.abs(q.y - pt.y) < pt.hitRadius
       );
       if (vertIndex >= 0) return { t: 'vert', i: vertIndex };
 
-      // Test 4 edge midpoints
       const edgeIndex = slot.quad.findIndex((q, i) => {
         const next = slot.quad[(i + 1) % 4];
         const mx = (q.x + next.x) / 2;
@@ -396,11 +435,9 @@ function bindCanvasEvents(slot) {
       });
       if (edgeIndex >= 0) return { t: 'edge', i: edgeIndex };
 
-      // Test inside polygon for whole-quad movement
       return isPointInPolygon(slot.quad, pt) ? { t: 'move' } : null;
     }
 
-    // Axis-aligned mode
     const c = slot.crop;
     const cornerHit = getRectangleCorners(c).find(
       q => Math.abs(q.x - pt.x) < pt.hitRadius && Math.abs(q.y - pt.y) < pt.hitRadius
@@ -433,7 +470,6 @@ function bindCanvasEvents(slot) {
     const W = slot.img.width;
     const H = slot.img.height;
 
-    // Hover cursor updates when not dragging
     if (!slot.dragMode) {
       const hit = testHit(pt);
       if (!hit) {
@@ -448,10 +484,8 @@ function bindCanvasEvents(slot) {
       return;
     }
 
-    // Active dragging transformations
     const mode = slot.dragMode;
     if (mode.t === 'edge') {
-      // Move edge along its normal vector
       const i = mode.i;
       const j = (i + 1) % 4;
       const a = slot.q0[i];
@@ -472,24 +506,20 @@ function bindCanvasEvents(slot) {
         y: Math.max(0, Math.min(H, b.y + ny * delta))
       };
     } else if (mode.t === 'vert') {
-      // Move single vertex
       slot.quad[mode.i] = {
         x: Math.max(0, Math.min(W, pt.x)),
         y: Math.max(0, Math.min(H, pt.y))
       };
     } else if (slot.persp && mode.t === 'move') {
-      // Translate entire perspective quad while keeping bounds within image
       const xs = slot.q0.map(q => q.x);
       const ys = slot.q0.map(q => q.y);
       const dx = Math.max(-Math.min(...xs), Math.min(W - Math.max(...xs), pt.x - slot.p0.x));
       const dy = Math.max(-Math.min(...ys), Math.min(H - Math.max(...ys), pt.y - slot.p0.y));
       slot.quad = slot.q0.map(q => ({ x: q.x + dx, y: q.y + dy }));
     } else if (mode.t === 'move') {
-      // Move axis-aligned crop box
       c.x = Math.max(0, Math.min(W - c.w, pt.x - slot.dragOffset.x));
       c.y = Math.max(0, Math.min(H - c.h, pt.y - slot.dragOffset.y));
     } else {
-      // Resize axis-aligned crop box with anchor point
       const { ax, ay } = mode.h;
       const sx = pt.x >= ax ? 1 : -1;
       const sy = pt.y >= ay ? 1 : -1;
@@ -600,6 +630,9 @@ function initAdjustmentsPanel() {
 
     syncPanelUI();
     requestPreview();
+    if (previewModalState.isOpen) {
+      renderPreviewCanvas();
+    }
   });
 
   panel.addEventListener('input', e => {
@@ -610,6 +643,9 @@ function initAdjustmentsPanel() {
         slots[id].filter[key] = val;
       });
       requestPreview();
+      if (previewModalState.isOpen) {
+        renderPreviewCanvas();
+      }
     }
   });
 
@@ -631,7 +667,6 @@ function applyFilters(ctx, width, height, filter) {
   const brightnessOffset = filter.br * 2.55;
   const saturationMult = 1 + filter.sat / 100;
 
-  // Pixel color adjustment pass
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i];
     let g = data[i + 1];
@@ -661,7 +696,6 @@ function applyFilters(ctx, width, height, filter) {
     data[i + 2] = (b + brightnessOffset - 128) * contrastFactor + 128;
   }
 
-  // 3x3 Sharpening convolution pass
   if (filter.sh) {
     const src = new Uint8ClampedArray(data);
     const alpha = filter.sh / 100;
@@ -690,8 +724,6 @@ function applyFilters(ctx, width, height, filter) {
 /**
  * Maps the 4 picked quadrilateral corners onto a rectified rectangle of dimensions
  * `outWidth` × `outHeight` using projective transformation with bilinear sampling.
- * 
- * Optimized to precalculate row invariant factors, eliminating redundant calculations.
  */
 function warpPerspective(slot, outWidth, outHeight) {
   if (!slot.srcData) {
@@ -709,7 +741,6 @@ function warpPerspective(slot, outWidth, outHeight) {
   const srcBytes = src.data;
   const [p0, p1, p2, p3] = slot.quad;
 
-  // Projective transformation homography matrix parameters
   const dx1 = p1.x - p2.x;
   const dx2 = p3.x - p2.x;
   const dx3 = p0.x - p1.x + p2.x - p3.x;
@@ -739,7 +770,6 @@ function warpPerspective(slot, outWidth, outHeight) {
   const outImageData = outCtx.createImageData(outWidth, outHeight);
   const outBytes = outImageData.data;
 
-  // Precompute column invariant terms across X axis
   const Au = new Float32Array(outWidth);
   const Du = new Float32Array(outWidth);
   const gu = new Float32Array(outWidth);
@@ -750,7 +780,6 @@ function warpPerspective(slot, outWidth, outHeight) {
     gu[i] = g * u;
   }
 
-  // Bilinear sampling pixel loop
   let outIndex = 0;
   for (let j = 0; j < outHeight; j++) {
     const v = (j + 0.5) / outHeight;
@@ -768,7 +797,6 @@ function warpPerspective(slot, outWidth, outHeight) {
       const fx = sx - x0;
       const fy = sy - y0;
 
-      // Coordinate boundary clamps
       const xa = x0 < 0 ? 0 : (x0 >= sw ? sw - 1 : x0);
       const xb = (x0 + 1) < 0 ? 0 : ((x0 + 1) >= sw ? sw - 1 : x0 + 1);
       const ya = y0 < 0 ? 0 : (y0 >= sh ? sh - 1 : y0);
@@ -861,14 +889,6 @@ function calculateAspectRatio(slot, options) {
 
 /**
  * Renders the A4 document layout onto a canvas with true physical scale.
- * 
- * Standard A4: 210 mm × 297 mm.
- * At 100 DPI: 827 × 1169 px (preview).
- * At 300 DPI: 2480 × 3508 px (high-res export).
- * 
- * @param {HTMLCanvasElement} canvas Destination canvas.
- * @param {number} dpi Target DPI resolution.
- * @param {boolean} showPlaceholders Whether to draw empty slot outlines.
  */
 function composeA4Sheet(canvas, dpi, showPlaceholders) {
   const options = getOptions();
@@ -914,7 +934,7 @@ function composeA4Sheet(canvas, dpi, showPlaceholders) {
     const cardPxY = startY * pxPerMm;
     const cardPxW = item.w * pxPerMm;
     const cardPxH = item.h * pxPerMm;
-    const cornerRadius = options.roundCorners ? 3.18 * pxPerMm : 0; // standard CR-80 radius is ~3.18 mm
+    const cornerRadius = options.roundCorners ? 3.18 * pxPerMm : 0;
 
     const definePath = () => {
       ctx.beginPath();
@@ -976,6 +996,9 @@ function requestPreview() {
     composeA4Sheet($('#sheet'), 100, true);
     if (!modalState.isOpen) {
       SLOT_IDS.forEach(id => drawThumbnail(slots[id]));
+    }
+    if (previewModalState.isOpen && previewModalState.target === 'a4') {
+      renderPreviewCanvas();
     }
     previewRafId = null;
   });
@@ -1087,41 +1110,31 @@ $('#lock').addEventListener('change', () => {
   requestPreview();
 });
 
-window.addEventListener('resize', () => fitModalCanvas());
+window.addEventListener('resize', () => {
+  fitModalCanvas();
+  if (previewModalState.isOpen) {
+    renderPreviewCanvas();
+  }
+});
 
 /* ==========================================================================
    9. Shared Utility Functions
    ========================================================================== */
 
-/**
- * Formats byte size into human-readable KB or MB string.
- */
 const formatFileSize = bytes =>
   bytes >= 1048576
     ? (bytes / 1048576).toFixed(2) + ' MB'
     : (bytes / 1024).toFixed(1) + ' KB';
 
-/**
- * Converts a canvas element to a Blob wrapped in a Promise.
- */
 const canvasToBlob = (canvas, type, quality) =>
   new Promise(resolve => canvas.toBlob(resolve, type, quality));
 
-/**
- * Yields back to browser event loop to allow UI updates and rendering.
- */
 const yieldEventLoop = () => new Promise(resolve => setTimeout(resolve, 0));
 
-/**
- * Sets text content of an element.
- */
 const updateStatusText = (element, text) => {
   element.textContent = text;
 };
 
-/**
- * Toggles disabled and "Working..." status on a button during long operations.
- */
 function setButtonBusy(selector, isBusy) {
   const btn = $(selector);
   if (!btn) return;
@@ -1134,9 +1147,6 @@ function setButtonBusy(selector, isBusy) {
   btn.disabled = isBusy;
 }
 
-/**
- * Triggers a browser download for a Blob file without leaking memory.
- */
 async function saveBlobFile(blob, filename) {
   try {
     const claudeDownloads = window.claude && (await claude.use('downloads'));
@@ -1158,9 +1168,6 @@ async function saveBlobFile(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
 }
 
-/**
- * Reads any image File or Blob into an offscreen canvas with white background.
- */
 async function fileToCanvas(file) {
   const bitmap = await createImageBitmap(file).catch(() => null);
   const source =
@@ -1186,9 +1193,6 @@ async function fileToCanvas(file) {
   return canvas;
 }
 
-/**
- * Multi-pass binary search JPEG compression to reach target KB size.
- */
 async function compressJpegToTarget(canvas, targetKB) {
   const byteLimit = targetKB * 1024;
   let currentCanvas = canvas;
@@ -1197,7 +1201,6 @@ async function compressJpegToTarget(canvas, targetKB) {
     let blob = await canvasToBlob(currentCanvas, 'image/jpeg', 0.92);
     if (blob.size <= byteLimit) return blob;
 
-    // Binary search across JPEG quality levels
     let low = 0.05;
     let high = 0.92;
     let bestBlob = null;
@@ -1213,7 +1216,6 @@ async function compressJpegToTarget(canvas, targetKB) {
     }
     if (bestBlob) return bestBlob;
 
-    // Quality alone was insufficient: scale down dimensions by 20%
     const scaledCanvas = document.createElement('canvas');
     scaledCanvas.width = Math.max(50, Math.round(currentCanvas.width * 0.8));
     scaledCanvas.height = Math.max(50, Math.round(currentCanvas.height * 0.8));
@@ -1229,9 +1231,6 @@ async function compressJpegToTarget(canvas, targetKB) {
   return canvasToBlob(currentCanvas, 'image/jpeg', 0.05);
 }
 
-/**
- * Converts a list of page canvas objects to a PDF Blob using jsPDF.
- */
 function convertPagesToPdf(pages, quality) {
   const { jsPDF } = window.jspdf;
   let pdf = null;
@@ -1260,9 +1259,6 @@ function convertPagesToPdf(pages, quality) {
   return pdf.output('blob');
 }
 
-/**
- * Rescales page canvas dimensions by factor f.
- */
 function rescalePages(pages, factor) {
   return pages.map(p => {
     const canvas = document.createElement('canvas');
@@ -1275,9 +1271,6 @@ function rescalePages(pages, factor) {
   });
 }
 
-/**
- * Compresses a multi-page PDF document to meet target KB size limit.
- */
 async function compressPdfToTarget(pages, targetKB) {
   const byteLimit = targetKB * 1024;
   let currentPages = pages;
@@ -1309,9 +1302,6 @@ async function compressPdfToTarget(pages, targetKB) {
   return convertPagesToPdf(currentPages, 0.08);
 }
 
-/**
- * Extracts and renders all pages of a PDF file to canvases at specified DPI.
- */
 async function extractPdfPages(file, dpi, progressCallback) {
   if (!window.pdfjsLib) {
     throw new Error('PDF reader library did not load. Please check your internet connection.');
@@ -1356,9 +1346,6 @@ async function extractPdfPages(file, dpi, progressCallback) {
   return renderedPages;
 }
 
-/**
- * Prepares page metadata for image-to-PDF compilation.
- */
 function createPdfPageLayout(canvas, fitMode) {
   if (fitMode === 'img') {
     return {
@@ -1385,9 +1372,6 @@ function createPdfPageLayout(canvas, fitMode) {
 const isPdfFile = f => /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
 const getFileStem = f => f.name.replace(/\.[^.]+$/, '');
 
-/**
- * Appends a processed result row with filename, size, and download button.
- */
 function appendResultRow(container, blob, filename, extraInfo) {
   const row = document.createElement('div');
   row.className = 'res';
@@ -1404,9 +1388,6 @@ function appendResultRow(container, blob, filename, extraInfo) {
   container.append(row);
 }
 
-/**
- * Prepends a batch "Download all" action button if multiple files were generated.
- */
 function addDownloadAllButton(container, items, label) {
   if (items.length <= 1) return;
 
@@ -1620,7 +1601,6 @@ $('#cp-go').addEventListener('click', async () => {
       updateStatusText(statusNote, `${prefix}Compressing ${file.name}…`);
       await yieldEventLoop();
 
-      // Check if file is already under the target limit
       if (file.size <= targetKB * 1024) {
         const filename = getFileStem(file) + (isPdfFile(file) ? '.pdf' : '.jpg');
         appendResultRow(
@@ -1695,25 +1675,41 @@ $('#cp-go').addEventListener('click', async () => {
 });
 
 /* ==========================================================================
-   13. Full-Screen Interactive Editor Modal & Loupe
+   13. Full-Screen Interactive Crop Editor Modal & Loupe
    ========================================================================== */
 
 function mountThumbnail(slot) {
   slot.thumb = document.createElement('canvas');
   slot.thumb.className = 'thumb';
-  slot.thumb.title = 'Tap to edit the crop';
-  slot.thumb.addEventListener('click', () => openModalEditor(slot));
+  slot.thumb.title = 'Click to open full screen preview';
+  slot.thumb.addEventListener('click', () => openPreviewModal(slot.id));
 
   const actionRow = document.createElement('div');
   actionRow.className = 'row';
   actionRow.style.justifyContent = 'center';
+  actionRow.style.gap = '8px';
+
+  const previewBtn = document.createElement('button');
+  previewBtn.className = 'btn';
+  previewBtn.type = 'button';
+  previewBtn.title = 'Preview card in full screen';
+  previewBtn.innerHTML = `
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
+      <polyline points="15 3 21 3 21 9"></polyline>
+      <polyline points="9 21 3 21 3 15"></polyline>
+      <line x1="21" y1="3" x2="14" y2="10"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>Full screen
+  `;
+  previewBtn.addEventListener('click', () => openPreviewModal(slot.id));
 
   const editBtn = document.createElement('button');
   editBtn.className = 'primary';
+  editBtn.type = 'button';
   editBtn.textContent = 'Edit crop';
   editBtn.addEventListener('click', () => openModalEditor(slot));
 
-  actionRow.append(editBtn);
+  actionRow.append(previewBtn, editBtn);
   slot.cv.replaceWith(slot.thumb);
   slot.thumb.after(actionRow);
 
@@ -1804,11 +1800,11 @@ function closeModalEditor(commitChanges) {
   slot.cv.remove();
 
   requestPreview();
+  if (previewModalState.isOpen) {
+    renderPreviewCanvas();
+  }
 }
 
-/**
- * Convex hull calculation via monotone chain Graham scan.
- */
 function computeConvexHull(points) {
   points.sort((a, b) => a.x - b.x || a.y - b.y);
   const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -1835,9 +1831,6 @@ function computeConvexHull(points) {
   return lower.concat(upper);
 }
 
-/**
- * Finds intersection point between two line segments (a-b and c-d).
- */
 function intersectSegments(a, b, c, d) {
   const denom = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x);
   if (Math.abs(denom) < 1e-9) return null;
@@ -1845,9 +1838,6 @@ function intersectSegments(a, b, c, d) {
   return t > 1 ? { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) } : null;
 }
 
-/**
- * Iteratively simplifies a convex polygon into a 4-corner quadrilateral.
- */
 function simplifyToQuadrilateral(poly) {
   let points = poly.slice();
   while (points.length > 4) {
@@ -1877,16 +1867,6 @@ function simplifyToQuadrilateral(poly) {
   return points;
 }
 
-/**
- * Automated card detection algorithm:
- * 1. Downscales image to thumbnail for fast processing.
- * 2. Samples border ring to estimate background color.
- * 3. Calculates Euclidean color distance map.
- * 4. Applies Otsu's thresholding to isolate card foreground.
- * 5. Identifies largest connected component via BFS flood-fill.
- * 6. Finds convex hull and simplifies to 4-corner quad.
- * 7. Orders corners cyclically (top-left, top-right, bottom-right, bottom-left).
- */
 function detectCardCorners(img) {
   const scaleFactor = Math.min(1, 320 / Math.max(img.width, img.height));
   const w = Math.max(8, Math.round(img.width * scaleFactor));
@@ -1911,7 +1891,6 @@ function detectCardCorners(img) {
     }
   }
 
-  // Median background color estimation
   const medianChannel = channelOffset => {
     const samples = borderPixels.map(idx => imgData[idx + channelOffset]).sort((a, b) => a - b);
     return samples[samples.length >> 1];
@@ -1933,7 +1912,6 @@ function detectCardCorners(img) {
     histogram[dist]++;
   }
 
-  // Otsu's thresholding
   let totalSum = 0;
   for (let i = 0; i < 256; i++) totalSum += i * histogram[i];
 
@@ -1961,7 +1939,6 @@ function detectCardCorners(img) {
 
   optimalThreshold = Math.max(14, optimalThreshold);
 
-  // Connected component labeling (BFS flood fill)
   const visited = new Uint8Array(totalPixels);
   const queue = new Int32Array(totalPixels);
   let bestStart = 0;
@@ -2013,7 +1990,6 @@ function detectCardCorners(img) {
     componentMask[queue[bestStart + k]] = 1;
   }
 
-  // Extract edge boundary pixels
   const boundaryPoints = [];
   for (let k = 0; k < bestLength; k++) {
     const idx = queue[bestStart + k];
@@ -2040,18 +2016,15 @@ function detectCardCorners(img) {
   const quad = simplifyToQuadrilateral(hull);
   if (quad.length !== 4) return null;
 
-  // Rescale back to original image dimensions
   const originalQuad = quad.map(p => ({
     x: Math.max(0, Math.min(img.width, p.x / scaleFactor)),
     y: Math.max(0, Math.min(img.height, p.y / scaleFactor))
   }));
 
-  // Sort corners by angle around centroid
   const cx = originalQuad.reduce((acc, p) => acc + p.x, 0) / 4;
   const cy = originalQuad.reduce((acc, p) => acc + p.y, 0) / 4;
   originalQuad.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
 
-  // Find top-left corner (minimum sum of x + y)
   let topIndex = 0;
   originalQuad.forEach((p, i) => {
     if (p.x + p.y < originalQuad[topIndex].x + originalQuad[topIndex].y) {
@@ -2062,9 +2035,6 @@ function detectCardCorners(img) {
   return [0, 1, 2, 3].map(i => originalQuad[(topIndex + i) % 4]);
 }
 
-/**
- * Runs card detection and automatically sets up perspective crop.
- */
 function autoSelectCard(slot, silentMode, retryCount) {
   let detectedCorners = null;
   try {
@@ -2085,7 +2055,6 @@ function autoSelectCard(slot, silentMode, retryCount) {
   const cardW = (dist(detectedCorners[0], detectedCorners[1]) + dist(detectedCorners[3], detectedCorners[2])) / 2;
   const cardH = (dist(detectedCorners[0], detectedCorners[3]) + dist(detectedCorners[1], detectedCorners[2])) / 2;
 
-  // Auto-rotate if card was scanned vertically
   if (!retryCount && cardH > cardW * 1.15) {
     rotateSlot(slot);
     return autoSelectCard(slot, silentMode, true);
@@ -2128,9 +2097,6 @@ function autoSelectCard(slot, silentMode, retryCount) {
   return true;
 }
 
-/**
- * Magnifier loupe displayed while dragging corners or edges.
- */
 function updateMagnifierLoupe(slot, event) {
   const loupeCanvas = $('#loupe');
   const mode = slot.dragMode;
@@ -2185,7 +2151,6 @@ function updateMagnifierLoupe(slot, event) {
     LOUPE_SIZE
   );
 
-  // Overlay quad boundary
   ctx.strokeStyle = '#3cc2b0';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -2198,7 +2163,6 @@ function updateMagnifierLoupe(slot, event) {
   ctx.closePath();
   ctx.stroke();
 
-  // Overlay center crosshairs
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -2208,7 +2172,6 @@ function updateMagnifierLoupe(slot, event) {
   ctx.lineTo(LOUPE_SIZE / 2 + 22, LOUPE_SIZE / 2);
   ctx.stroke();
 
-  // Position loupe without blocking user cursor
   const stageRect = $('#m-stage').getBoundingClientRect();
   let leftPos = stageRect.left + 10;
   const topPos = stageRect.top + 10;
@@ -2220,7 +2183,6 @@ function updateMagnifierLoupe(slot, event) {
   loupeCanvas.hidden = false;
 }
 
-// Modal control toolbar buttons
 $('#m-auto').addEventListener('click', () => {
   if (modalState.currentSlot) autoSelectCard(modalState.currentSlot, false);
 });
@@ -2246,14 +2208,270 @@ $('#m-reset').addEventListener('click', () => {
 $('#m-cancel').addEventListener('click', () => closeModalEditor(false));
 $('#m-done').addEventListener('click', () => closeModalEditor(true));
 
+/* ==========================================================================
+   14. Full-Screen Card & Sheet Preview Modal
+   ========================================================================== */
+
+/**
+ * Opens the full-screen preview modal for high-resolution card inspection or sheet review.
+ * @param {'front'|'back'|'a4'} targetId Target view to open.
+ */
+function openPreviewModal(targetId) {
+  if (targetId !== 'a4' && !slots[targetId]?.img) {
+    const otherSide = targetId === 'front' ? 'back' : 'front';
+    if (slots[otherSide]?.img) {
+      targetId = otherSide;
+    } else if (hasLoadedCard()) {
+      targetId = 'a4';
+    } else {
+      alert('Please add at least one card image first.');
+      return;
+    }
+  } else if (targetId === 'a4' && !hasLoadedCard()) {
+    alert('Please add at least one card image first.');
+    return;
+  }
+
+  previewModalState.isOpen = true;
+  previewModalState.target = targetId;
+  previewModalState.zoom = 1;
+  previewModalState.panX = 0;
+  previewModalState.panY = 0;
+
+  $('#card-preview-modal').hidden = false;
+  document.body.classList.add('lock');
+
+  syncPreviewSideTabs();
+  renderPreviewCanvas();
+}
+
+/**
+ * Closes the full-screen preview modal.
+ */
+function closePreviewModal() {
+  previewModalState.isOpen = false;
+  $('#card-preview-modal').hidden = true;
+  document.body.classList.remove('lock');
+}
+
+/**
+ * Switches the active preview target (front card, back card, or A4 sheet).
+ */
+function switchPreviewTarget(targetId) {
+  if (targetId !== 'a4' && !slots[targetId]?.img) {
+    alert(`No ${targetId} card image has been added yet.`);
+    return;
+  }
+  previewModalState.target = targetId;
+  previewModalState.zoom = 1;
+  previewModalState.panX = 0;
+  previewModalState.panY = 0;
+
+  syncPreviewSideTabs();
+  renderPreviewCanvas();
+}
+
+/**
+ * Updates active state of tabs in the preview header.
+ */
+function syncPreviewSideTabs() {
+  const current = previewModalState.target;
+  document.querySelectorAll('#pv-side-switcher button').forEach(btn => {
+    const isCurrent = btn.dataset.pv === current;
+    btn.setAttribute('aria-pressed', isCurrent);
+    if (btn.dataset.pv !== 'a4') {
+      btn.style.opacity = slots[btn.dataset.pv]?.img ? '1' : '0.45';
+    }
+  });
+}
+
+/**
+ * Renders the high-resolution card or A4 sheet into the preview canvas.
+ */
+function renderPreviewCanvas() {
+  const target = previewModalState.target;
+  const pvCanvas = $('#pv-canvas');
+  const titleEl = $('#pv-title');
+  const subtitleEl = $('#pv-subtitle');
+  const dimEl = $('#pv-dimensions');
+  const editCropBtn = $('#pv-edit-crop');
+
+  if (target === 'front' || target === 'back') {
+    const slot = slots[target];
+    if (!slot || !slot.img) return;
+
+    // Render high-resolution view of the card
+    const width = Math.min(2400, Math.max(1200, slot.img.width || 1600));
+    const height = Math.max(50, Math.round(width / calculateAspectRatio(slot, getOptions())));
+    const rendered = createCardCanvas(slot, width, height);
+
+    pvCanvas.width = width;
+    pvCanvas.height = height;
+    const ctx = pvCanvas.getContext('2d');
+    ctx.drawImage(rendered, 0, 0);
+
+    titleEl.textContent = `${slot.id === 'front' ? 'Front side' : 'Back side'} — Full Screen Preview`;
+    subtitleEl.textContent = 'High resolution inspection view';
+    dimEl.textContent = `Physical card scale: 85.6 × 54.0 mm · ${width} × ${height} px`;
+    editCropBtn.style.display = 'inline-block';
+  } else {
+    // Render full A4 sheet at 200 DPI
+    composeA4Sheet(pvCanvas, 200, false);
+    titleEl.textContent = 'A4 Sheet — Full Screen Preview';
+    subtitleEl.textContent = 'True 100% scale A4 printable layout';
+    dimEl.textContent = `Standard A4 (210 × 297 mm) · ${pvCanvas.width} × ${pvCanvas.height} px`;
+    editCropBtn.style.display = 'none';
+  }
+
+  applyPreviewTransform();
+}
+
+/**
+ * Applies current zoom and pan translation to the preview stage container.
+ */
+function applyPreviewTransform() {
+  const inner = $('#pv-stage-inner');
+  if (!inner) return;
+  inner.style.transform = `translate(${previewModalState.panX}px, ${previewModalState.panY}px) scale(${previewModalState.zoom})`;
+  $('#pv-zoom-level').textContent = `${Math.round(previewModalState.zoom * 100)}%`;
+}
+
+/**
+ * Sets preview zoom level between 40% and 400%.
+ */
+function setPreviewZoom(zoomVal) {
+  previewModalState.zoom = Math.max(0.4, Math.min(4.0, zoomVal));
+  if (previewModalState.zoom <= 1) {
+    previewModalState.panX = 0;
+    previewModalState.panY = 0;
+  }
+  applyPreviewTransform();
+}
+
+function resetPreviewZoom() {
+  previewModalState.zoom = 1;
+  previewModalState.panX = 0;
+  previewModalState.panY = 0;
+  applyPreviewTransform();
+}
+
+// Side switcher buttons
+document.querySelectorAll('#pv-side-switcher button').forEach(btn => {
+  btn.addEventListener('click', () => switchPreviewTarget(btn.dataset.pv));
+});
+
+// Zoom controls
+$('#pv-zoom-in').addEventListener('click', () => setPreviewZoom(previewModalState.zoom * 1.25));
+$('#pv-zoom-out').addEventListener('click', () => setPreviewZoom(previewModalState.zoom / 1.25));
+$('#pv-zoom-fit').addEventListener('click', resetPreviewZoom);
+
+// Mouse wheel zoom on preview stage
+$('#pv-stage').addEventListener('wheel', e => {
+  if (!previewModalState.isOpen) return;
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 1.15 : 0.87;
+  setPreviewZoom(previewModalState.zoom * delta);
+}, { passive: false });
+
+// Pan gesture dragging on preview stage
+const pvStage = $('#pv-stage');
+const pvInner = $('#pv-stage-inner');
+
+pvStage.addEventListener('pointerdown', e => {
+  if (!previewModalState.isOpen) return;
+  previewModalState.isPanning = true;
+  previewModalState.startPointerX = e.clientX;
+  previewModalState.startPointerY = e.clientY;
+  previewModalState.basePanX = previewModalState.panX;
+  previewModalState.basePanY = previewModalState.panY;
+  pvInner.classList.add('panning');
+  pvStage.setPointerCapture(e.pointerId);
+});
+
+pvStage.addEventListener('pointermove', e => {
+  if (!previewModalState.isPanning) return;
+  const dx = e.clientX - previewModalState.startPointerX;
+  const dy = e.clientY - previewModalState.startPointerY;
+  previewModalState.panX = previewModalState.basePanX + dx / previewModalState.zoom;
+  previewModalState.panY = previewModalState.basePanY + dy / previewModalState.zoom;
+  applyPreviewTransform();
+});
+
+const stopPanning = () => {
+  previewModalState.isPanning = false;
+  pvInner.classList.remove('panning');
+};
+pvStage.addEventListener('pointerup', stopPanning);
+pvStage.addEventListener('pointercancel', stopPanning);
+
+// Modal action buttons
+$('#pv-close').addEventListener('click', closePreviewModal);
+$('#pv-done').addEventListener('click', closePreviewModal);
+
+$('#pv-edit-crop').addEventListener('click', () => {
+  const target = previewModalState.target;
+  closePreviewModal();
+  if (slots[target]) {
+    openModalEditor(slots[target]);
+  }
+});
+
+$('#pv-download').addEventListener('click', async () => {
+  const target = previewModalState.target;
+  if (target === 'front' || target === 'back') {
+    const slot = slots[target];
+    if (!slot || !slot.img) return;
+    const width = Math.min(2400, Math.max(1200, slot.img.width || 1600));
+    const height = Math.max(50, Math.round(width / calculateAspectRatio(slot, getOptions())));
+    const canvas = createCardCanvas(slot, width, height);
+    const blob = await canvasToBlob(canvas, 'image/png');
+    saveBlobFile(blob, `id-card-${target}.png`);
+  } else {
+    const canvas = createExportCanvas();
+    const blob = await canvasToBlob(canvas, 'image/png');
+    saveBlobFile(blob, 'id-card-a4-preview.png');
+  }
+});
+
+// Global keyboard listeners for modals
 window.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalState.isOpen) {
-    closeModalEditor(false);
+  if (e.key === 'Escape') {
+    if (previewModalState.isOpen) {
+      closePreviewModal();
+      return;
+    }
+    if (modalState.isOpen) {
+      closeModalEditor(false);
+      return;
+    }
+  }
+
+  if (previewModalState.isOpen) {
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      setPreviewZoom(previewModalState.zoom * 1.25);
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      setPreviewZoom(previewModalState.zoom / 1.25);
+    } else if (e.key === '0') {
+      e.preventDefault();
+      resetPreviewZoom();
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const sides = ['front', 'back', 'a4'].filter(id => id === 'a4' || slots[id]?.img);
+      const currentIndex = sides.indexOf(previewModalState.target);
+      if (currentIndex >= 0 && sides.length > 1) {
+        const nextIndex =
+          e.key === 'ArrowRight'
+            ? (currentIndex + 1) % sides.length
+            : (currentIndex - 1 + sides.length) % sides.length;
+        switchPreviewTarget(sides[nextIndex]);
+      }
+    }
   }
 });
 
 /* ==========================================================================
-   14. Hash-based SPA Router & Navigation
+   15. Hash-based SPA Router & Navigation
    ========================================================================== */
 
 const APP_PAGES = ['home', 'a4', 'convert', 'compress'];

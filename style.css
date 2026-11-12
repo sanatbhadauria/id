@@ -12,10 +12,11 @@
  * 8. Form Controls, Sliders & Action Buttons
  * 9. A4 Sheet Preview & Page Sidebar
  * 10. Full-Screen Crop & Perspective Editor Modal
- * 11. Magnifier Loupe
- * 12. Processing Results & Status Messages
- * 13. Responsive Breakpoints (Tablets & Mobile)
- * 14. Print Media Stylesheet (100% Scale A4 Output)
+ * 11. Full-Screen Card & Sheet Preview Modal
+ * 12. Magnifier Loupe
+ * 13. Processing Results & Status Messages
+ * 14. Responsive Breakpoints (Tablets & Mobile)
+ * 15. Print Media Stylesheet (100% Scale A4 Output)
  */
 
 /* ==========================================================================
@@ -488,7 +489,7 @@ nav.tabs a[aria-selected="true"] {
 
 /* ==========================================================================
    6. Main Layouts & Card Panels
-   ========================================================================= */
+   ========================================================================== */
 main {
   max-width: 1200px;
   margin: 0 auto;
@@ -594,11 +595,12 @@ main.single {
   border-radius: 8px;
   border: 1px solid var(--line);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
 }
 
 .thumb:hover {
   opacity: 0.92;
+  transform: scale(1.01);
 }
 
 .editor > .hint,
@@ -740,6 +742,11 @@ select {
   width: 100%;
   aspect-ratio: 210 / 297;
   display: block;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sheet:hover {
+  box-shadow: 0 4px 12px rgba(22, 32, 43, 0.18), 0 16px 36px rgba(22, 32, 43, 0.16);
 }
 
 /* ==========================================================================
@@ -829,7 +836,115 @@ select {
 }
 
 /* ==========================================================================
-   11. Magnifier Loupe
+   11. Full-Screen Card & Sheet Preview Modal
+   ========================================================================== */
+.preview-modal .m-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #12202b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.preview-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.preview-title-group b {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.preview-subtitle {
+  font-size: 12px;
+  color: #9fb6c2;
+  font-weight: 400;
+}
+
+.pv-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pv-zoom-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef4f7;
+  min-width: 44px;
+  text-align: center;
+}
+
+.pv-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #162430 0%, #0b1217 100%);
+  user-select: none;
+  touch-action: none;
+  padding: 20px;
+}
+
+.pv-stage-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  cursor: grab;
+}
+
+.pv-stage-inner.panning {
+  cursor: grabbing;
+}
+
+#pv-canvas {
+  max-width: 92vw;
+  max-height: 75vh;
+  width: auto;
+  height: auto;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  display: block;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.pv-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #9fb6c2;
+}
+
+.pv-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.pv-actions {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+/* ==========================================================================
+   12. Magnifier Loupe
    ========================================================================== */
 #loupe {
   position: fixed;
@@ -844,7 +959,7 @@ select {
 }
 
 /* ==========================================================================
-   12. Processing Results & Status Messages
+   13. Processing Results & Status Messages
    ========================================================================== */
 .res {
   display: flex;
@@ -877,7 +992,7 @@ select {
 }
 
 /* ==========================================================================
-   13. Responsive Breakpoints
+   14. Responsive Breakpoints
    ========================================================================== */
 @media (max-width: 900px) {
   main {
@@ -963,10 +1078,39 @@ select {
   .card h2 {
     flex-wrap: wrap;
   }
+
+  /* Preview Modal Mobile Adjustments */
+  .preview-modal .m-top {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .preview-title-group b {
+    font-size: 15px;
+  }
+  .preview-subtitle {
+    display: none;
+  }
+  .pv-zoom-controls {
+    display: none;
+  }
+  .pv-stage {
+    padding: 10px;
+  }
+  #pv-canvas {
+    max-width: 96vw;
+    max-height: 68vh;
+  }
+  .pv-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .pv-actions button {
+    flex: 1;
+  }
 }
 
 /* ==========================================================================
-   14. Print Media Stylesheet (100% Scale A4 Output)
+   15. Print Media Stylesheet (100% Scale A4 Output)
    ========================================================================== */
 #printArea {
   display: none;
