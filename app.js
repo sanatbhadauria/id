@@ -124,6 +124,7 @@ function getPassportOptions() {
     hasBorder: $('#pp-border') ? $('#pp-border').checked : true,
     borderStyle: $('#pp-border-style') ? $('#pp-border-style').value : 'light',
     textType: $('#pp-text-type') ? $('#pp-text-type').value : 'none',
+    textPos: $('#pp-text-pos') ? $('#pp-text-pos').value : 'overlay',
     textName: $('#pp-text-name') ? $('#pp-text-name').value.trim() : '',
     textDate: $('#pp-text-date') ? $('#pp-text-date').value.trim() : '',
     textCustom2: $('#pp-text-custom2') ? $('#pp-text-custom2').value.trim() : '',
@@ -643,7 +644,10 @@ function bindCanvasEvents(slot) {
         : (getOptions().lockAspect ? CARD_ASPECT_RATIO : null);
 
       if (targetRatio) {
-        w = Math.max(30, Math.min(w, maxW, maxH * targetRatio));
+        const distW = Math.abs(pt.x - ax);
+        const distH = Math.abs(pt.y - ay);
+        let desiredW = Math.max(distW, distH * targetRatio);
+        w = Math.max(30, Math.min(desiredW, maxW, maxH * targetRatio));
         h = w / targetRatio;
       } else {
         w = Math.max(30, Math.min(w, maxW));
@@ -1224,6 +1228,8 @@ window.addEventListener('resize', () => {
 let passportManualItems = [];
 let passportSelectedId = null;
 let passportDragState = null;
+let passportBaseWidth = 35;
+let passportBaseHeight = 45;
 let passportAspectRatio = 35 / 45;
 
 function updateRatioBadge() {
@@ -1247,18 +1253,19 @@ function getPassportTextLines(opt) {
   const isUpper = opt.textUpper !== false;
   const formatText = str => (isUpper ? (str || '').toUpperCase() : (str || '')).trim();
 
-  const name = formatText(opt.textName);
+  // If no name is typed yet, provide a friendly default so preview shows immediately
+  const name = formatText(opt.textName) || (opt.textType.includes('name') ? 'YOUR NAME' : '');
   const dateStr = formatText(opt.textDate) || getTodayDateString();
   const custom2 = formatText(opt.textCustom2);
 
   const lines = [];
   switch (opt.textType) {
     case 'name_dop':
-      if (name) lines.push(name);
+      lines.push(name || 'YOUR NAME');
       lines.push(`DOP: ${dateStr}`);
       break;
     case 'name_dob':
-      if (name) lines.push(name);
+      lines.push(name || 'YOUR NAME');
       lines.push(`DOB: ${dateStr}`);
       break;
     case 'dop':
@@ -1268,11 +1275,12 @@ function getPassportTextLines(opt) {
       lines.push(`DOB: ${dateStr}`);
       break;
     case 'name':
-      if (name) lines.push(name);
+      lines.push(name || 'YOUR NAME');
       break;
     case 'custom':
       if (name) lines.push(name);
       if (custom2) lines.push(custom2);
+      if (lines.length === 0) lines.push('CUSTOM TEXT');
       break;
   }
   return lines;
@@ -1282,7 +1290,7 @@ function renderPassportTextStrip(ctx, lines, pwPx, phPx, opt) {
   if (!lines || lines.length === 0) return;
   const numLines = lines.length;
 
-  const stripH = Math.round(phPx * (numLines === 1 ? 0.135 : 0.22));
+  const stripH = Math.round(phPx * (numLines === 1 ? 0.14 : 0.23));
   const stripY = phPx - stripH;
   const style = opt.textStyle || 'white_strip';
 
@@ -1301,7 +1309,7 @@ function renderPassportTextStrip(ctx, lines, pwPx, phPx, opt) {
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, stripY, pwPx, stripH);
   } else if (style === 'semi_overlay') {
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
     ctx.fillRect(0, stripY, pwPx, stripH);
   } else if (style === 'subtle_box') {
     const pad = Math.round(pwPx * 0.035);
@@ -1315,8 +1323,8 @@ function renderPassportTextStrip(ctx, lines, pwPx, phPx, opt) {
   const isDarkBg = style === 'black_strip' || style === 'semi_overlay';
   ctx.fillStyle = isDarkBg ? '#ffffff' : '#050505';
 
-  const maxTextW = pwPx * 0.90;
-  let fontSize = Math.round(stripH / (numLines === 1 ? 2.0 : 3.0));
+  const maxTextW = pwPx * 0.92;
+  let fontSize = Math.round(stripH / (numLines === 1 ? 2.1 : 3.1));
   ctx.font = `700 ${fontSize}px "Segoe UI", Roboto, -apple-system, Arial, sans-serif`;
 
   for (const line of lines) {
@@ -1325,7 +1333,7 @@ function renderPassportTextStrip(ctx, lines, pwPx, phPx, opt) {
       fontSize = Math.floor(fontSize * (maxTextW / measuredW));
     }
   }
-  ctx.font = `700 ${fontSize}px "Segoe UI", Roboto, -apple-system, Arial, sans-serif`;
+  ctx.font = `700 ${Math.max(8, fontSize)}px "Segoe UI", Roboto, -apple-system, Arial, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -1343,26 +1351,71 @@ function renderPassportTextStrip(ctx, lines, pwPx, phPx, opt) {
 
 /**
  * Creates passport photo canvas with crop, adjustments, and bottom text strip.
+ * Supports both loaded images and instant sample silhouette previews.
  */
 function createPassportPhotoCanvas(slot, pwPx, phPx) {
-  const baseCanvas = createCardCanvas(slot, pwPx, phPx);
   const opt = getPassportOptions();
-
-  if (!opt.textType || opt.textType === 'none') {
-    return baseCanvas;
-  }
-
-  const lines = getPassportTextLines(opt);
-  if (lines.length === 0) {
-    return baseCanvas;
-  }
+  const hasText = opt.textType && opt.textType !== 'none';
+  const lines = hasText ? getPassportTextLines(opt) : [];
+  const isBelow = hasText && opt.textPos === 'below';
+  const numLines = lines.length;
+  const stripH = (hasText && numLines > 0) ? Math.round(phPx * (numLines === 1 ? 0.14 : 0.23)) : 0;
+  const photoH = isBelow ? Math.max(10, phPx - stripH) : phPx;
 
   const canvas = document.createElement('canvas');
   canvas.width = pwPx;
   canvas.height = phPx;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(baseCanvas, 0, 0, pwPx, phPx);
-  renderPassportTextStrip(ctx, lines, pwPx, phPx, opt);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  if (slot && slot.img) {
+    const cropped = createCardCanvas(slot, pwPx, photoH);
+    ctx.drawImage(cropped, 0, 0, pwPx, photoH);
+    if (isBelow) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, photoH, pwPx, stripH);
+    }
+  } else {
+    // Studio portrait avatar silhouette placeholder
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, pwPx, phPx);
+
+    // Subtle studio background vignette
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, photoH);
+    bgGrad.addColorStop(0, '#f1f5f9');
+    bgGrad.addColorStop(1, '#e2e8f0');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, pwPx, photoH);
+
+    // Avatar head and shoulders
+    ctx.fillStyle = '#94a3b8';
+    const headR = Math.round(pwPx * 0.19);
+    const headX = pwPx / 2;
+    const headY = Math.round(photoH * 0.36);
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(headX, Math.round(photoH * 0.96), Math.round(pwPx * 0.40), Math.PI, 0);
+    ctx.fill();
+
+    if (!hasText) {
+      ctx.fillStyle = '#64748b';
+      ctx.font = `600 ${Math.max(10, Math.round(pwPx / 8.5))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Passport', headX, Math.round(photoH * 0.70));
+      ctx.font = `500 ${Math.max(9, Math.round(pwPx / 10))}px sans-serif`;
+      ctx.fillText(`${opt.photoWidth}×${opt.photoHeight}mm`, headX, Math.round(photoH * 0.83));
+    }
+  }
+
+  if (hasText && lines.length > 0) {
+    renderPassportTextStrip(ctx, lines, pwPx, phPx, opt);
+  }
+
   return canvas;
 }
 
@@ -1434,10 +1487,28 @@ function initPassportPhotoTool() {
   $('#pp-preset').addEventListener('change', () => {
     const presetVal = $('#pp-preset').value;
     if (presetVal !== 'custom' && PASSPORT_PRESETS[presetVal]) {
-      $('#pp-w').value = PASSPORT_PRESETS[presetVal].w;
-      $('#pp-h').value = PASSPORT_PRESETS[presetVal].h;
-      passportAspectRatio = PASSPORT_PRESETS[presetVal].w / PASSPORT_PRESETS[presetVal].h;
+      const p = PASSPORT_PRESETS[presetVal];
+      $('#pp-w').value = p.w;
+      $('#pp-h').value = p.h;
+      passportBaseWidth = p.w;
+      passportBaseHeight = p.h;
+      passportAspectRatio = p.w / p.h;
+
+      // Sync aspect ratio dropdown
+      const aspectSel = $('#pp-aspect');
+      if (aspectSel) {
+        if (Math.abs(passportAspectRatio - (35 / 45)) < 0.02) aspectSel.value = '35:45';
+        else if (Math.abs(passportAspectRatio - 1.0) < 0.02) aspectSel.value = '1:1';
+        else if (Math.abs(passportAspectRatio - 0.75) < 0.02) aspectSel.value = '3:4';
+        else if (Math.abs(passportAspectRatio - (2 / 3)) < 0.02) aspectSel.value = '2:3';
+        else aspectSel.value = 'custom';
+      }
     }
+    const scaleSlider = $('#pp-size-scale');
+    if (scaleSlider) scaleSlider.value = 100;
+    const scaleVal = $('#pp-scale-val');
+    if (scaleVal) scaleVal.textContent = '100%';
+
     updateRatioBadge();
     if (passportSlot.img) {
       initDefaultCrop(passportSlot);
@@ -1451,16 +1522,63 @@ function initPassportPhotoTool() {
     requestPassportPreview();
   });
 
+  // Aspect ratio selector (allows immediate switching to 35:45, 1:1, 3:4, 2:3, or custom)
+  const aspectSelect = $('#pp-aspect');
+  if (aspectSelect) {
+    aspectSelect.addEventListener('change', () => {
+      const val = aspectSelect.value;
+      const curW = +$('#pp-w').value || 35;
+      const lockCheck = $('#pp-lock-ratio');
+
+      if (val === 'custom') {
+        if (lockCheck) lockCheck.checked = false;
+      } else {
+        if (lockCheck) lockCheck.checked = true;
+        let newRatio = 35 / 45;
+        if (val === '1:1') newRatio = 1.0;
+        else if (val === '3:4') newRatio = 3 / 4;
+        else if (val === '2:3') newRatio = 2 / 3;
+        else if (val === '35:45') newRatio = 35 / 45;
+
+        passportAspectRatio = newRatio;
+        const newH = Math.round((curW / newRatio) * 10) / 10;
+        $('#pp-h').value = newH;
+        passportBaseWidth = curW;
+        passportBaseHeight = newH;
+
+        if ($('#pp-size-scale')) $('#pp-size-scale').value = 100;
+        if ($('#pp-scale-val')) $('#pp-scale-val').textContent = '100%';
+      }
+
+      $('#pp-preset').value = 'custom';
+      updateRatioBadge();
+      if (passportSlot.img) {
+        initDefaultCrop(passportSlot);
+        drawPassportThumbnail();
+      }
+      const opt = getPassportOptions();
+      if (opt.alignment === 'manual') {
+        const paper = getPassportPaperDimensions();
+        passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+      }
+      requestPassportPreview();
+    });
+  }
+
   // Width input (X dimension) - maintains aspect ratio when locked
   $('#pp-w').addEventListener('input', () => {
     const newW = +$('#pp-w').value;
     const isLocked = $('#pp-lock-ratio') && $('#pp-lock-ratio').checked;
     if (isLocked && passportAspectRatio > 0 && newW > 0) {
-      const newH = +(newW / passportAspectRatio).toFixed(1);
+      const newH = Math.round((newW / passportAspectRatio) * 10) / 10;
       $('#pp-h').value = newH;
+      passportBaseHeight = newH;
     } else if (newW > 0 && +$('#pp-h').value > 0) {
       passportAspectRatio = newW / +$('#pp-h').value;
     }
+    passportBaseWidth = newW;
+    if ($('#pp-size-scale')) $('#pp-size-scale').value = 100;
+    if ($('#pp-scale-val')) $('#pp-scale-val').textContent = '100%';
     $('#pp-preset').value = 'custom';
     updateRatioBadge();
     if (passportSlot.img) {
@@ -1480,11 +1598,15 @@ function initPassportPhotoTool() {
     const newH = +$('#pp-h').value;
     const isLocked = $('#pp-lock-ratio') && $('#pp-lock-ratio').checked;
     if (isLocked && passportAspectRatio > 0 && newH > 0) {
-      const newW = +(newH * passportAspectRatio).toFixed(1);
+      const newW = Math.round((newH * passportAspectRatio) * 10) / 10;
       $('#pp-w').value = newW;
-    } else if (newH > 0 && +$('#pp-w').value > 0) {
+      passportBaseWidth = newW;
+    } else if (newH > 0 && +$('#pp-h').value > 0) {
       passportAspectRatio = +$('#pp-w').value / newH;
     }
+    passportBaseHeight = newH;
+    if ($('#pp-size-scale')) $('#pp-size-scale').value = 100;
+    if ($('#pp-scale-val')) $('#pp-scale-val').textContent = '100%';
     $('#pp-preset').value = 'custom';
     updateRatioBadge();
     if (passportSlot.img) {
@@ -1499,6 +1621,48 @@ function initPassportPhotoTool() {
     requestPassportPreview();
   });
 
+  // Simultaneous X & Y Size Scale slider
+  const sizeScaleSlider = $('#pp-size-scale');
+  if (sizeScaleSlider) {
+    sizeScaleSlider.addEventListener('input', () => {
+      const pct = +sizeScaleSlider.value;
+      const scale = pct / 100;
+      const scaleVal = $('#pp-scale-val');
+      if (scaleVal) scaleVal.textContent = `${pct}%`;
+
+      const newW = Math.round(passportBaseWidth * scale * 10) / 10;
+      const newH = Math.round(passportBaseHeight * scale * 10) / 10;
+      $('#pp-w').value = newW;
+      $('#pp-h').value = newH;
+
+      updateRatioBadge();
+      if (passportSlot.img) {
+        drawPassportThumbnail();
+      }
+      const opt = getPassportOptions();
+      if (opt.alignment === 'manual') {
+        const paper = getPassportPaperDimensions();
+        passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+      }
+      requestPassportPreview();
+    });
+  }
+
+  // Reset Scale button
+  const scaleResetBtn = $('#pp-scale-reset');
+  if (scaleResetBtn) {
+    scaleResetBtn.addEventListener('click', () => {
+      if (sizeScaleSlider) sizeScaleSlider.value = 100;
+      const scaleVal = $('#pp-scale-val');
+      if (scaleVal) scaleVal.textContent = '100%';
+      $('#pp-w').value = passportBaseWidth;
+      $('#pp-h').value = passportBaseHeight;
+      updateRatioBadge();
+      if (passportSlot.img) drawPassportThumbnail();
+      requestPassportPreview();
+    });
+  }
+
   // Lock aspect ratio checkbox
   const lockRatioCheck = $('#pp-lock-ratio');
   if (lockRatioCheck) {
@@ -1507,6 +1671,8 @@ function initPassportPhotoTool() {
       const h = +$('#pp-h').value;
       if (w > 0 && h > 0) {
         passportAspectRatio = w / h;
+        passportBaseWidth = w;
+        passportBaseHeight = h;
       }
       updateRatioBadge();
     });
@@ -1561,7 +1727,7 @@ function initPassportPhotoTool() {
   }
 
   // Text inputs & formatting listeners
-  ['pp-text-type', 'pp-text-style', 'pp-text-upper'].forEach(id => {
+  ['pp-text-type', 'pp-text-pos', 'pp-text-style', 'pp-text-upper'].forEach(id => {
     const el = $('#' + id);
     if (el) {
       el.addEventListener('change', () => {
@@ -1808,6 +1974,10 @@ function initPassportPhotoTool() {
 
   // Initialize interactive drag-and-drop & manual placement
   bindPassportSheetDragEvents();
+
+  // Initial synchronization of controls and badges
+  syncPassportTextControls();
+  updateRatioBadge();
 }
 
 function drawPassportThumbnail() {
@@ -1965,12 +2135,9 @@ function composePassportSheet(canvas, dpi, isPreview) {
     return;
   }
 
-  let photoCanvas = null;
   const pwPx = Math.round(opt.photoWidth * px);
   const phPx = Math.round(opt.photoHeight * px);
-  if (passportSlot.img) {
-    photoCanvas = createPassportPhotoCanvas(passportSlot, pwPx, phPx);
-  }
+  const photoCanvas = createPassportPhotoCanvas(passportSlot, pwPx, phPx);
 
   // Draw alignment crosshairs if previewing and actively dragging near center
   if (isPreview && passportDragState && passportDragState.active) {
@@ -2005,19 +2172,6 @@ function composePassportSheet(canvas, dpi, isPreview) {
 
     if (photoCanvas) {
       ctx.drawImage(photoCanvas, posX, posY, pwPx, phPx);
-    } else if (isPreview) {
-      ctx.save();
-      ctx.strokeStyle = '#b5bcc3';
-      ctx.setLineDash([6, 4]);
-      ctx.lineWidth = 1.2;
-      ctx.strokeRect(posX, posY, pwPx, phPx);
-      ctx.fillStyle = '#8a96a1';
-      ctx.font = `${Math.round(pwPx / 10)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Passport', posX + pwPx / 2, posY + phPx / 2 - 8);
-      ctx.fillText(`${opt.photoWidth}×${opt.photoHeight}mm`, posX + pwPx / 2, posY + phPx / 2 + 10);
-      ctx.restore();
     }
 
     if (opt.hasBorder) {
