@@ -489,6 +489,18 @@
           <label id="pp-count-wrapper" style="display:none;">Photos to print
             <input id="pp-count" type="number" min="1" max="60" value="8">
           </label>
+          <label>Photo alignment
+            <select id="pp-align">
+              <option value="center" selected>Center (Default)</option>
+              <option value="top-left">Top - Left</option>
+              <option value="top-center">Top - Center</option>
+              <option value="top-right">Top - Right</option>
+              <option value="bottom-left">Bottom - Left</option>
+              <option value="bottom-center">Bottom - Center</option>
+              <option value="bottom-right">Bottom - Right</option>
+              <option value="manual">Manual placement (Pick &amp; Move anywhere)</option>
+            </select>
+          </label>
           <label>Spacing between photos (mm)
             <input id="pp-gap" type="number" min="0" max="25" step="0.5" value="2.5">
           </label>
@@ -506,6 +518,26 @@
               <option value="white">White border / padding (1.5 mm)</option>
             </select>
           </label>
+
+          <!-- Manual Layout & Movement Toolbar -->
+          <div id="pp-manual-controls" class="pp-manual-box" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <span style="font-size:12.5px; font-weight:600; color:var(--ink);">
+                🖱️ Manual layout mode — click &amp; drag any photo to move it freely
+              </span>
+              <div class="row no-margin" style="gap:6px;">
+                <button type="button" id="pp-add-photo" class="btn" style="padding:4px 9px; font-size:12px;" title="Add another photo copy to page">+ Add Photo</button>
+                <button type="button" id="pp-del-photo" class="btn" style="padding:4px 9px; font-size:12px;" title="Remove selected photo copy">− Remove</button>
+                <button type="button" id="pp-reset-layout" class="btn" style="padding:4px 9px; font-size:12px;" title="Snap all photos back to clean grid">Reset to Grid</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:12px; border-top:1px solid var(--line); padding-top:8px;">
+              <label class="check" style="margin:0; font-size:12px;">
+                <input id="pp-snap-grid" type="checkbox" checked> Snap to 2 mm grid
+              </label>
+              <span id="pp-selected-info" style="color:var(--muted); font-size:12px;">Click any photo on sheet to select &amp; nudge</span>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -514,16 +546,25 @@
     <aside class="side card">
       <h2>
         Print preview
-        <button id="pp-fs-sheet" class="btn" title="View sheet in full screen">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <polyline points="9 21 3 21 3 15"></polyline>
-            <line x1="21" y1="3" x2="14" y2="10"></line>
-            <line x1="3" y1="21" x2="10" y2="14"></line>
-          </svg>Full screen
-        </button>
+        <div class="row no-margin" style="gap:6px;">
+          <span id="pp-mode-badge" class="badge-mode" title="Layout arrangement mode">GRID</span>
+          <button id="pp-fs-sheet" class="btn" title="View sheet in full screen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>Full screen
+          </button>
+        </div>
       </h2>
-      <canvas id="pp-sheet" class="paper-sheet" title="Click to view full screen preview" style="cursor:pointer;"></canvas>
+      <div class="sheet-preview-wrap">
+        <canvas id="pp-sheet" class="paper-sheet is-draggable" title="Drag any photo to move anywhere on page, or click Full screen above"></canvas>
+        <div id="pp-drag-tooltip" class="sheet-drag-tooltip">X: 0 mm, Y: 0 mm</div>
+      </div>
+      <p class="hint" style="margin-top:6px; margin-bottom:2px; font-size:12px;">
+        💡 <b>Click &amp; drag</b> any photo on the preview sheet to reposition it anywhere.
+      </p>
 
       <div class="sheet-info-badge" id="pp-sheet-badge">
         <span id="pp-layout-summary"><b>0 photos</b> on 4 × 6 inch</span>

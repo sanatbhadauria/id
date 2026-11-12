@@ -116,6 +116,7 @@ function getPassportOptions() {
     aspectRatio: photoWidth / photoHeight,
     paperKey: $('#pp-paper') ? $('#pp-paper').value : '4x6',
     orientation: $('#pp-orient') ? $('#pp-orient').value : 'auto',
+    alignment: $('#pp-align') ? $('#pp-align').value : 'center',
     countMode: $('#pp-count-mode') ? $('#pp-count-mode').value : 'fill',
     customCount: Math.max(1, Math.min(100, +$('#pp-count').value || 8)),
     gap: Math.max(0, +$('#pp-gap').value || 0),
@@ -1212,6 +1213,11 @@ window.addEventListener('resize', () => {
    9. Passport Photo Tool Module
    ========================================================================== */
 
+// Manual alignment state & positioned photo items
+let passportManualItems = [];
+let passportSelectedId = null;
+let passportDragState = null;
+
 const passportSlot = {
   id: 'passport',
   el: null,
@@ -1287,6 +1293,12 @@ function initPassportPhotoTool() {
       initDefaultCrop(passportSlot);
       drawPassportThumbnail();
     }
+    // Re-sync manual items if in manual mode
+    const opt = getPassportOptions();
+    if (opt.alignment === 'manual') {
+      const paper = getPassportPaperDimensions();
+      passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+    }
     requestPassportPreview();
   });
 
@@ -1297,15 +1309,125 @@ function initPassportPhotoTool() {
         initDefaultCrop(passportSlot);
         drawPassportThumbnail();
       }
+      const opt = getPassportOptions();
+      if (opt.alignment === 'manual') {
+        const paper = getPassportPaperDimensions();
+        passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+      }
       requestPassportPreview();
     });
   });
 
   // Paper & layout inputs
-  ['pp-paper', 'pp-orient', 'pp-gap', 'pp-margin', 'pp-border', 'pp-border-style'].forEach(id => {
+  ['pp-paper', 'pp-orient', 'pp-gap', 'pp-margin', 'pp-border', 'pp-border-style', 'pp-align'].forEach(id => {
     const el = $('#' + id);
     if (el) el.addEventListener('input', requestPassportPreview);
   });
+
+  // Alignment dropdown handler
+  const alignSelect = $('#pp-align');
+  if (alignSelect) {
+    alignSelect.addEventListener('change', () => {
+      const isManual = alignSelect.value === 'manual';
+      const manualBox = $('#pp-manual-controls');
+      if (isManual) {
+        const opt = getPassportOptions();
+        const paper = getPassportPaperDimensions();
+        if (passportManualItems.length === 0) {
+          passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+        }
+        if (manualBox) manualBox.style.display = 'block';
+      } else {
+        if (manualBox) manualBox.style.display = 'none';
+      }
+      requestPassportPreview();
+    });
+  }
+
+  // Quick toggle mode badge in preview sidebar
+  const modeBadge = $('#pp-mode-badge');
+  if (modeBadge) {
+    modeBadge.addEventListener('click', () => {
+      const sel = $('#pp-align');
+      if (!sel) return;
+      if (sel.value === 'manual') {
+        sel.value = 'center';
+      } else {
+        const opt = getPassportOptions();
+        const paper = getPassportPaperDimensions();
+        passportManualItems = calculateGridPositions(paper.w, paper.h, opt);
+        sel.value = 'manual';
+      }
+      requestPassportPreview();
+    });
+  }
+
+  // Clamp manual photos when paper size or orientation changes
+  ['pp-paper', 'pp-orient'].forEach(id => {
+    const el = $('#' + id);
+    if (el) {
+      el.addEventListener('change', () => {
+        const opt = getPassportOptions();
+        const paper = getPassportPaperDimensions();
+        if (opt.alignment === 'manual' && passportManualItems.length > 0) {
+          passportManualItems.forEach(it => {
+            it.x = Math.max(0, Math.min(paper.w - opt.photoWidth, it.x));
+            it.y = Math.max(0, Math.min(paper.h - opt.photoHeight, it.y));
+          });
+        }
+      });
+    }
+  });
+
+  // Manual layout action buttons
+  const addPhotoBtn = $('#pp-add-photo');
+  if (addPhotoBtn) {
+    addPhotoBtn.addEventListener('click', () => {
+      const opt = getPassportOptions();
+      const paper = getPassportPaperDimensions();
+      if (opt.alignment !== 'manual') {
+        passportManualItems = calculateGridPositions(paper.w, paper.h, opt);
+        if ($('#pp-align')) $('#pp-align').value = 'manual';
+      }
+      const nextId = (passportManualItems.reduce((max, it) => Math.max(max, it.id), 0) || 0) + 1;
+      const offset = (passportManualItems.length % 6) * 4;
+      const newX = Math.max(0, Math.min(paper.w - opt.photoWidth, opt.margin + offset));
+      const newY = Math.max(0, Math.min(paper.h - opt.photoHeight, opt.margin + offset));
+      passportManualItems.push({ id: nextId, x: newX, y: newY });
+      passportSelectedId = nextId;
+      requestPassportPreview();
+    });
+  }
+
+  const delPhotoBtn = $('#pp-del-photo');
+  if (delPhotoBtn) {
+    delPhotoBtn.addEventListener('click', () => {
+      if (passportManualItems.length === 0) return;
+      if (passportSelectedId !== null) {
+        passportManualItems = passportManualItems.filter(it => it.id !== passportSelectedId);
+        passportSelectedId = null;
+      } else {
+        passportManualItems.pop();
+      }
+      requestPassportPreview();
+    });
+  }
+
+  const resetLayoutBtn = $('#pp-reset-layout');
+  if (resetLayoutBtn) {
+    resetLayoutBtn.addEventListener('click', () => {
+      const opt = getPassportOptions();
+      const paper = getPassportPaperDimensions();
+      passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+      passportSelectedId = null;
+      requestPassportPreview();
+    });
+  }
+
+  const snapGridCheck = $('#pp-snap-grid');
+  if (snapGridCheck) {
+    snapGridCheck.addEventListener('change', requestPassportPreview);
+  }
 
   $('#pp-count-mode').addEventListener('change', () => {
     const isCustom = $('#pp-count-mode').value === 'custom';
@@ -1387,13 +1509,17 @@ function initPassportPhotoTool() {
   });
 
   $('#pp-fs-sheet').addEventListener('click', () => openPreviewModal('pp-sheet'));
-  $('#pp-sheet').addEventListener('click', () => openPreviewModal('pp-sheet'));
+  // Double-clicking sheet opens full screen, single-click/drag moves photos
+  $('#pp-sheet').addEventListener('dblclick', () => openPreviewModal('pp-sheet'));
 
   // Export & Print buttons
   $('#pp-print').addEventListener('click', printPassportPhotos);
   $('#pp-pdf').addEventListener('click', exportPassportPdf);
   $('#pp-jpg').addEventListener('click', exportPassportJpeg);
   $('#pp-single').addEventListener('click', exportSinglePassportPhoto);
+
+  // Initialize interactive drag-and-drop & manual placement
+  bindPassportSheetDragEvents();
 }
 
 function drawPassportThumbnail() {
@@ -1411,7 +1537,82 @@ function drawPassportThumbnail() {
 }
 
 /**
- * Composes multi-photo passport layout onto the target canvas.
+ * Calculates physical layout coordinates for grid-based photo alignment.
+ */
+function calculateGridPositions(paperW, paperH, opt) {
+  const grid = calculateMaxGridCount(paperW, paperH, opt);
+  const maxPhotos = grid.total;
+  const countToDraw = opt.countMode === 'fill' ? maxPhotos : Math.min(opt.customCount, maxPhotos);
+  if (grid.cols <= 0 || grid.rows <= 0 || countToDraw <= 0) return [];
+
+  const activeCols = Math.min(grid.cols, countToDraw);
+  const activeRows = Math.ceil(countToDraw / grid.cols);
+  const gridW = activeCols * opt.photoWidth + (activeCols - 1) * opt.gap;
+  const gridH = activeRows * opt.photoHeight + (activeRows - 1) * opt.gap;
+
+  let startX = (paperW - gridW) / 2;
+  let startY = (paperH - gridH) / 2;
+
+  switch (opt.alignment) {
+    case 'top-left':
+      startX = opt.margin;
+      startY = opt.margin;
+      break;
+    case 'top-center':
+      startX = (paperW - gridW) / 2;
+      startY = opt.margin;
+      break;
+    case 'top-right':
+      startX = Math.max(opt.margin, paperW - opt.margin - gridW);
+      startY = opt.margin;
+      break;
+    case 'bottom-left':
+      startX = opt.margin;
+      startY = Math.max(opt.margin, paperH - opt.margin - gridH);
+      break;
+    case 'bottom-center':
+      startX = (paperW - gridW) / 2;
+      startY = Math.max(opt.margin, paperH - opt.margin - gridH);
+      break;
+    case 'bottom-right':
+      startX = Math.max(opt.margin, paperW - opt.margin - gridW);
+      startY = Math.max(opt.margin, paperH - opt.margin - gridH);
+      break;
+    case 'center':
+    default:
+      startX = (paperW - gridW) / 2;
+      startY = (paperH - gridH) / 2;
+      break;
+  }
+
+  const items = [];
+  for (let i = 0; i < countToDraw; i++) {
+    const r = Math.floor(i / grid.cols);
+    const c = i % grid.cols;
+    items.push({
+      id: i + 1,
+      x: startX + c * (opt.photoWidth + opt.gap),
+      y: startY + r * (opt.photoHeight + opt.gap)
+    });
+  }
+  return items;
+}
+
+/**
+ * Returns active photo positions (from manual free placement or aligned auto grid).
+ */
+function getEffectivePassportPositions(paper, opt) {
+  if (opt.alignment === 'manual') {
+    if (passportManualItems.length === 0) {
+      passportManualItems = calculateGridPositions(paper.w, paper.h, { ...opt, alignment: 'center' });
+    }
+    return passportManualItems;
+  }
+  return calculateGridPositions(paper.w, paper.h, opt);
+}
+
+/**
+ * Composes multi-photo passport layout onto the target canvas with alignment and manual placement.
  */
 function composePassportSheet(canvas, dpi, isPreview) {
   const opt = getPassportOptions();
@@ -1428,15 +1629,46 @@ function composePassportSheet(canvas, dpi, isPreview) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  const grid = calculateMaxGridCount(paper.w, paper.h, opt);
-  const maxPhotos = grid.total;
-  const countToDraw = opt.countMode === 'fill' ? maxPhotos : Math.min(opt.customCount, maxPhotos);
+  const isManual = opt.alignment === 'manual';
+  const items = getEffectivePassportPositions(paper, opt);
+  const countToDraw = items.length;
+
+  // Format alignment label for UI badge
+  const alignLabel = isManual
+    ? 'Manual placement'
+    : (opt.alignment === 'center' ? 'Centered grid' : opt.alignment.replace('-', ' ') + ' grid');
 
   // Update badge summary
-  $('#pp-layout-summary').innerHTML = `<b>${countToDraw} photo${countToDraw !== 1 ? 's' : ''}</b> on ${paper.name}`;
+  $('#pp-layout-summary').innerHTML = `<b>${countToDraw} photo${countToDraw !== 1 ? 's' : ''}</b> on ${paper.name} <span style="font-size:11px;opacity:0.85;">(${alignLabel})</span>`;
   $('#pp-dpi-summary').textContent = `${dpi} DPI · ${Math.round(paper.w)} × ${Math.round(paper.h)} mm`;
 
-  if (grid.cols <= 0 || grid.rows <= 0 || countToDraw <= 0) {
+  const modeBadge = $('#pp-mode-badge');
+  if (modeBadge) {
+    modeBadge.textContent = isManual ? 'MANUAL' : 'GRID';
+    if (isManual) modeBadge.classList.add('manual');
+    else modeBadge.classList.remove('manual');
+  }
+
+  const manualBox = $('#pp-manual-controls');
+  if (manualBox) {
+    manualBox.style.display = isManual ? 'block' : 'none';
+  }
+
+  const selInfo = $('#pp-selected-info');
+  if (selInfo && isManual) {
+    if (passportSelectedId !== null) {
+      const cur = items.find(it => it.id === passportSelectedId);
+      if (cur) {
+        selInfo.innerHTML = `Selected: <b>Photo #${cur.id}</b> (${cur.x.toFixed(1)} × ${cur.y.toFixed(1)} mm)`;
+      } else {
+        selInfo.textContent = 'Click any photo on sheet to select & nudge';
+      }
+    } else {
+      selInfo.textContent = 'Click any photo on sheet to select & nudge';
+    }
+  }
+
+  if (countToDraw <= 0) {
     ctx.fillStyle = '#8a96a1';
     ctx.font = `${Math.round(20 * (dpi / 100))}px sans-serif`;
     ctx.textAlign = 'center';
@@ -1445,27 +1677,43 @@ function composePassportSheet(canvas, dpi, isPreview) {
     return;
   }
 
-  const activeCols = Math.min(grid.cols, countToDraw);
-  const activeRows = Math.ceil(countToDraw / grid.cols);
-  const gridW = activeCols * opt.photoWidth + (activeCols - 1) * opt.gap;
-  const gridH = activeRows * opt.photoHeight + (activeRows - 1) * opt.gap;
-  const startX = (paper.w - gridW) / 2;
-  const startY = (paper.h - gridH) / 2;
-
   let photoCanvas = null;
+  const pwPx = Math.round(opt.photoWidth * px);
+  const phPx = Math.round(opt.photoHeight * px);
   if (passportSlot.img) {
-    const pwPx = Math.round(opt.photoWidth * px);
-    const phPx = Math.round(opt.photoHeight * px);
     photoCanvas = createCardCanvas(passportSlot, pwPx, phPx);
   }
 
+  // Draw alignment crosshairs if previewing and actively dragging near center
+  if (isPreview && passportDragState && passportDragState.active) {
+    const draggingItem = items.find(it => it.id === passportDragState.id);
+    if (draggingItem) {
+      const centerX = draggingItem.x + opt.photoWidth / 2;
+      const centerY = draggingItem.y + opt.photoHeight / 2;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(9, 105, 218, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      if (Math.abs(centerX - paper.w / 2) < 2) {
+        ctx.beginPath();
+        ctx.moveTo(Math.round((paper.w / 2) * px), 0);
+        ctx.lineTo(Math.round((paper.w / 2) * px), H);
+        ctx.stroke();
+      }
+      if (Math.abs(centerY - paper.h / 2) < 2) {
+        ctx.beginPath();
+        ctx.moveTo(0, Math.round((paper.h / 2) * px));
+        ctx.lineTo(W, Math.round((paper.h / 2) * px));
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   for (let i = 0; i < countToDraw; i++) {
-    const r = Math.floor(i / grid.cols);
-    const c = i % grid.cols;
-    const posX = Math.round((startX + c * (opt.photoWidth + opt.gap)) * px);
-    const posY = Math.round((startY + r * (opt.photoHeight + opt.gap)) * px);
-    const pwPx = Math.round(opt.photoWidth * px);
-    const phPx = Math.round(opt.photoHeight * px);
+    const it = items[i];
+    const posX = Math.round(it.x * px);
+    const posY = Math.round(it.y * px);
 
     if (photoCanvas) {
       ctx.drawImage(photoCanvas, posX, posY, pwPx, phPx);
@@ -1505,7 +1753,234 @@ function composePassportSheet(canvas, dpi, isPreview) {
       }
       ctx.restore();
     }
+
+    // High-visibility selection highlight with corner grab handles in preview mode
+    if (isPreview && isManual && it.id === passportSelectedId) {
+      ctx.save();
+      ctx.strokeStyle = '#0969da';
+      ctx.lineWidth = Math.max(2, 1.8 * (dpi / 100));
+      ctx.setLineDash([]);
+      ctx.strokeRect(posX, posY, pwPx, phPx);
+
+      const handleSize = Math.max(6, Math.round(5 * (dpi / 100)));
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#0969da';
+      ctx.lineWidth = 1.5;
+      const corners = [
+        [posX, posY],
+        [posX + pwPx, posY],
+        [posX, posY + phPx],
+        [posX + pwPx, posY + phPx]
+      ];
+      corners.forEach(([cx, cy]) => {
+        ctx.fillRect(cx - handleSize / 2, cy - handleSize / 2, handleSize, handleSize);
+        ctx.strokeRect(cx - handleSize / 2, cy - handleSize / 2, handleSize, handleSize);
+      });
+      ctx.restore();
+    }
   }
+}
+
+/**
+ * Handles mouse and touch drag-and-drop movement of passport photos directly on the print sheet canvas.
+ */
+function bindPassportSheetDragEvents() {
+  const canvas = $('#pp-sheet');
+  const tooltip = $('#pp-drag-tooltip');
+  if (!canvas) return;
+
+  function getPointerMm(e) {
+    const paper = getPassportPaperDimensions();
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+    const relX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const relY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    return {
+      mmX: relX * paper.w,
+      mmY: relY * paper.h,
+      clientX,
+      clientY,
+      rect
+    };
+  }
+
+  function startDrag(e) {
+    const opt = getPassportOptions();
+    const paper = getPassportPaperDimensions();
+    const { mmX, mmY, clientX, clientY, rect } = getPointerMm(e);
+
+    const items = getEffectivePassportPositions(paper, opt);
+
+    // Hit test from uppermost photo downward
+    let hit = null;
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (
+        mmX >= it.x &&
+        mmX <= it.x + opt.photoWidth &&
+        mmY >= it.y &&
+        mmY <= it.y + opt.photoHeight
+      ) {
+        hit = it;
+        break;
+      }
+    }
+
+    if (hit) {
+      // Auto-transition from grid to manual mode upon dragging
+      if (opt.alignment !== 'manual') {
+        passportManualItems = items.map(it => ({ ...it }));
+        const alignEl = $('#pp-align');
+        if (alignEl) alignEl.value = 'manual';
+        const manualBox = $('#pp-manual-controls');
+        if (manualBox) manualBox.style.display = 'block';
+        const modeBadge = $('#pp-mode-badge');
+        if (modeBadge) {
+          modeBadge.textContent = 'MANUAL';
+          modeBadge.classList.add('manual');
+        }
+        hit = passportManualItems.find(it => it.id === hit.id) || passportManualItems[0];
+      }
+
+      passportSelectedId = hit.id;
+      passportDragState = {
+        active: true,
+        id: hit.id,
+        startMmX: mmX,
+        startMmY: mmY,
+        itemStartX: hit.x,
+        itemStartY: hit.y
+      };
+
+      canvas.classList.add('is-dragging');
+      if (tooltip) {
+        tooltip.style.display = 'block';
+        tooltip.textContent = `X: ${hit.x.toFixed(1)} mm, Y: ${hit.y.toFixed(1)} mm`;
+        tooltip.style.left = `${clientX - rect.left}px`;
+        tooltip.style.top = `${clientY - rect.top}px`;
+      }
+      requestPassportPreview();
+      e.preventDefault();
+    } else {
+      if (passportSelectedId !== null) {
+        passportSelectedId = null;
+        requestPassportPreview();
+      }
+    }
+  }
+
+  function moveDrag(e) {
+    const opt = getPassportOptions();
+    const paper = getPassportPaperDimensions();
+    const { mmX, mmY, clientX, clientY, rect } = getPointerMm(e);
+
+    if (passportDragState && passportDragState.active) {
+      const item = passportManualItems.find(it => it.id === passportDragState.id);
+      if (item) {
+        const dx = mmX - passportDragState.startMmX;
+        const dy = mmY - passportDragState.startMmY;
+        let newX = passportDragState.itemStartX + dx;
+        let newY = passportDragState.itemStartY + dy;
+
+        const isSnap = $('#pp-snap-grid') && $('#pp-snap-grid').checked;
+        if (isSnap) {
+          newX = Math.round(newX / 2) * 2;
+          newY = Math.round(newY / 2) * 2;
+        }
+
+        // Clamp inside paper bounds
+        newX = Math.max(0, Math.min(paper.w - opt.photoWidth, newX));
+        newY = Math.max(0, Math.min(paper.h - opt.photoHeight, newY));
+
+        item.x = newX;
+        item.y = newY;
+
+        if (tooltip) {
+          tooltip.style.display = 'block';
+          tooltip.textContent = `X: ${newX.toFixed(1)} mm, Y: ${newY.toFixed(1)} mm`;
+          tooltip.style.left = `${clientX - rect.left}px`;
+          tooltip.style.top = `${clientY - rect.top}px`;
+        }
+
+        requestPassportPreview();
+      }
+      e.preventDefault();
+    } else {
+      // Hover cursor feedback
+      const items = getEffectivePassportPositions(paper, opt);
+      let isOver = false;
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i];
+        if (
+          mmX >= it.x &&
+          mmX <= it.x + opt.photoWidth &&
+          mmY >= it.y &&
+          mmY <= it.y + opt.photoHeight
+        ) {
+          isOver = true;
+          break;
+        }
+      }
+      canvas.style.cursor = isOver ? 'grab' : 'default';
+    }
+  }
+
+  function endDrag() {
+    if (passportDragState && passportDragState.active) {
+      passportDragState = null;
+      canvas.classList.remove('is-dragging');
+      if (tooltip) tooltip.style.display = 'none';
+      requestPassportPreview();
+    }
+  }
+
+  canvas.addEventListener('mousedown', startDrag);
+  window.addEventListener('mousemove', moveDrag);
+  window.addEventListener('mouseup', endDrag);
+
+  canvas.addEventListener('touchstart', startDrag, { passive: false });
+  window.addEventListener('touchmove', moveDrag, { passive: false });
+  window.addEventListener('touchend', endDrag);
+  window.addEventListener('touchcancel', endDrag);
+
+  // Keyboard micro-nudge & delete keys for selected photo
+  window.addEventListener('keydown', e => {
+    if (passportSelectedId === null) return;
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+    const opt = getPassportOptions();
+    if (opt.alignment !== 'manual') return;
+
+    const item = passportManualItems.find(it => it.id === passportSelectedId);
+    if (!item) return;
+
+    const paper = getPassportPaperDimensions();
+    const step = e.shiftKey ? 5 : (e.altKey ? 0.2 : 1);
+
+    if (e.key === 'ArrowLeft') {
+      item.x = Math.max(0, item.x - step);
+      e.preventDefault();
+      requestPassportPreview();
+    } else if (e.key === 'ArrowRight') {
+      item.x = Math.min(paper.w - opt.photoWidth, item.x + step);
+      e.preventDefault();
+      requestPassportPreview();
+    } else if (e.key === 'ArrowUp') {
+      item.y = Math.max(0, item.y - step);
+      e.preventDefault();
+      requestPassportPreview();
+    } else if (e.key === 'ArrowDown') {
+      item.y = Math.min(paper.h - opt.photoHeight, item.y + step);
+      e.preventDefault();
+      requestPassportPreview();
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      passportManualItems = passportManualItems.filter(it => it.id !== passportSelectedId);
+      passportSelectedId = null;
+      e.preventDefault();
+      requestPassportPreview();
+    }
+  });
 }
 
 function requestPassportPreview() {
