@@ -434,6 +434,16 @@
           <label>Photo height (mm)
             <input id="pp-h" type="number" min="15" max="150" step="0.5" value="45">
           </label>
+          <div class="row no-margin" style="grid-column: 1 / -1; align-items: center; justify-content: space-between; margin-top: 2px;">
+            <label class="check" style="margin: 0; font-size: 13px;">
+              <input id="pp-lock-ratio" type="checkbox" checked>
+              <span style="display:inline-flex; align-items:center; gap:5px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Lock aspect ratio (change width &amp; height simultaneously)
+              </span>
+            </label>
+            <span id="pp-ratio-badge" style="font-size: 11px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px;">Ratio: 35 : 45 (1 : 1.29)</span>
+          </div>
         </div>
       </section>
 
@@ -458,6 +468,60 @@
           <button id="pp-reset-edits">Reset edits</button>
         </div>
         <p class="hint">Adjust brightness, contrast, and sharpness for compliant passport photo results.</p>
+      </section>
+
+      <!-- Card: Photo Text & Date Stamps (Govt / SSC / Exam / Visa format) -->
+      <section class="card" id="pp-text-card">
+        <h2>Photo text &amp; date stamp</h2>
+        <div class="controls">
+          <label style="grid-column: 1 / -1;">Text style / stamp
+            <select id="pp-text-type">
+              <option value="none" selected>None (Plain photo without text)</option>
+              <option value="name_dop">Name &amp; Date of Photo (SSC / Govt Exams / Recruitment)</option>
+              <option value="name_dob">Name &amp; Date of Birth (DOB)</option>
+              <option value="dop">Date of Photo (DOP) only</option>
+              <option value="dob">Date of Birth (DOB) only</option>
+              <option value="name">Candidate Name only</option>
+              <option value="custom">Custom Text (1 or 2 lines)</option>
+            </select>
+          </label>
+
+          <div id="pp-text-fields-wrap" style="display:none; grid-column: 1 / -1;" class="controls">
+            <label id="pp-name-wrap">Candidate full name / Line 1
+              <input id="pp-text-name" type="text" placeholder="e.g. RAHUL SHARMA" maxlength="40">
+            </label>
+
+            <div id="pp-date-wrap" style="display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label id="pp-date-label" style="font-size:13px; font-weight:600; margin:0;">Date</label>
+                <button type="button" id="pp-today-btn" class="btn" style="padding:2px 8px; font-size:11px; margin:0;" title="Set to today's date">Use Today's Date</button>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <input id="pp-date-picker" type="date" style="width:44px; padding:6px; cursor:pointer;" title="Pick from calendar">
+                <input id="pp-text-date" type="text" placeholder="DD/MM/YYYY" maxlength="25" style="flex:1;">
+              </div>
+            </div>
+
+            <label id="pp-custom2-wrap" style="display:none;">Line 2 text (Optional)
+              <input id="pp-text-custom2" type="text" placeholder="e.g. ROLL NO / REG ID" maxlength="40">
+            </label>
+
+            <label>Text strip background
+              <select id="pp-text-style">
+                <option value="white_strip" selected>White bar overlay at bottom (Govt standard)</option>
+                <option value="black_strip">Black bar overlay with white text</option>
+                <option value="semi_overlay">Semi-transparent dark overlay</option>
+                <option value="subtle_box">Framed white label box</option>
+              </select>
+            </label>
+
+            <label class="check" style="grid-column: 1 / -1; margin-top:2px;">
+              <input id="pp-text-upper" type="checkbox" checked>
+              Uppercase text (e.g. NAME: RAHUL SHARMA / DOP: 12/11/2026)
+            </label>
+          </div>
+        </div>
+        <p class="hint">Prints official name and date stamps compliant with SSC, UPSC, state boards, and portal photo requirements.</p>
       </section>
 
       <!-- Card 3: Page & Print Settings -->
