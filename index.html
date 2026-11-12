@@ -239,15 +239,15 @@ button:disabled{opacity:.6;cursor:progress}
             <line x1="3" y1="21" x2="10" y2="14"/>
           </svg>
         </div>
-        <span class="tool-tag">Target size</span>
+        <span class="tool-tag">Batch &amp; Target size</span>
       </div>
       <h2>Compress Files</h2>
-      <p class="tool-desc">Reduce large PDF and image files to meet strict upload size limits (e.g. 100 KB, 200 KB) required by application portals.</p>
+      <p class="tool-desc">Batch reduce multiple PDF and image files to meet strict upload size limits (e.g. 100 KB, 200 KB) required by application portals.</p>
       <ul class="tool-features">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Batch compress multiple files in one run</li>
         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Specify exact target file size in KB</li>
         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Intelligent multi-pass optimization</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Supports PDF, JPG, PNG, and WebP</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Instant before &amp; after size reporting</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Download individually or all at once</li>
       </ul>
       <div class="tool-action">
         <span>Open file compressor</span>
@@ -376,13 +376,13 @@ button:disabled{opacity:.6;cursor:progress}
     <span class="crumb-cur">Compress</span>
   </div>
   <section class="card">
-    <h2>Compress a file</h2>
-    <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose a file to compress"><div><b>Drop a PDF, JPG, PNG or WebP file</b>or tap to choose</div></div>
-    <input type="file" id="cp-file" accept=".pdf,application/pdf,image/*" hidden>
+    <h2>Compress files</h2>
+    <div class="drop" id="cp-drop" tabindex="0" role="button" aria-label="Choose files to compress"><div><b>Drop PDF, JPG, PNG or WebP files</b>or tap to choose (you can pick several)</div></div>
+    <input type="file" id="cp-file" accept=".pdf,application/pdf,image/*" multiple hidden>
     <div class="controls">
       <label style="grid-column:1/-1">Target size (KB)<input id="cp-kb" type="number" min="5" step="10" value="200" inputmode="numeric"></label>
     </div>
-    <div class="actions"><button class="primary" id="cp-go">Compress</button></div>
+    <div class="actions"><button class="primary" id="cp-go">Compress files</button></div>
     <p class="note" id="cp-note" aria-live="polite"></p>
     <div id="cp-out"></div>
     <p class="hint">Images are saved as JPG. PDFs are rebuilt from page images, so their text will no longer be selectable. The file is first tuned by quality, then reduced in size if the quality alone cannot reach the target.</p>
@@ -746,7 +746,24 @@ function result(box, blob, name, extra) {
 const picks = { cv: [], cp: [] };
 function wireDrop(p, multi) {
   const drop = $(`#${p}-drop`), inp = $(`#${p}-file`);
-  const set = fs => { picks[p] = multi ? fs : fs.slice(0, 1); const d = document.createElement('div'), b = document.createElement('b'); b.textContent = picks[p].map(f => f.name).join(', '); d.append(b, 'Tap or drop to change'); drop.replaceChildren(d); };
+  const set = fs => {
+    picks[p] = multi ? fs : fs.slice(0, 1);
+    const d = document.createElement('div'), b = document.createElement('b');
+    const n = picks[p].length;
+    if (n === 1) {
+      b.textContent = picks[p][0].name + ' (' + fmt(picks[p][0].size) + ')';
+    } else {
+      const names = picks[p].slice(0, 3).map(f => f.name).join(', ');
+      b.textContent = `${n} files selected` + (n <= 3 ? `: ${names}` : `: ${names}…`);
+    }
+    const hint = document.createElement('span');
+    hint.textContent = 'Tap or drop to change files';
+    hint.style.display = 'block';
+    hint.style.fontSize = '13px';
+    hint.style.marginTop = '4px';
+    d.append(b, hint);
+    drop.replaceChildren(d);
+  };
   drop.onclick = () => inp.click();
   drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
   inp.onchange = () => inp.files.length && set([...inp.files]);
@@ -754,7 +771,34 @@ function wireDrop(p, multi) {
   ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', e => e.dataTransfer.files.length && set([...e.dataTransfer.files]));
 }
-wireDrop('cv', true); wireDrop('cp', false);
+wireDrop('cv', true); wireDrop('cp', true);
+
+function addDownloadAll(box, items, label) {
+  if (items.length <= 1) return;
+  const row = document.createElement('div');
+  row.className = 'res';
+  row.style.background = 'rgba(11, 110, 99, 0.08)';
+  row.style.padding = '12px 14px';
+  row.style.borderRadius = '8px';
+  row.style.marginBottom = '12px';
+  const t = document.createElement('span');
+  t.innerHTML = `<b>${items.length} ${label || 'files ready'}</b>`;
+  const b = document.createElement('button');
+  b.className = 'primary';
+  b.textContent = `Download all (${items.length})`;
+  b.onclick = async () => {
+    b.disabled = true;
+    for (let i = 0; i < items.length; i++) {
+      b.textContent = `Saving ${i + 1}/${items.length}…`;
+      await save(items[i].blob, items[i].name);
+      await new Promise(r => setTimeout(r, 250));
+    }
+    b.textContent = 'Downloaded all';
+    b.disabled = false;
+  };
+  row.append(t, b);
+  box.prepend(row);
+}
 
 /* ---------- convert ---------- */
 $('#cv-go').onclick = async () => {
@@ -762,39 +806,94 @@ $('#cv-go').onclick = async () => {
   if (!fs.length) return say(note, 'Choose at least one file first.');
   const to = $('#cv-to').value, q = Math.min(100, Math.max(10, +$('#cv-q').value || 90)) / 100, dpi = +$('#cv-dpi').value, fit = $('#cv-fit').value;
   busy('#cv-go', true); await tick();
+  const completed = [];
   try {
     const pages = [], skipped = [];
-    for (const f of fs) {
-      say(note, 'Working on ' + f.name + '…'); await tick();
+    for (let idx = 0; idx < fs.length; idx++) {
+      const f = fs[idx], pfx = fs.length > 1 ? `[${idx + 1}/${fs.length}] ` : '';
+      say(note, `${pfx}Working on ${f.name}…`); await tick();
       if (isPdf(f)) {
         if (to === 'pdf') { skipped.push(f.name); continue; }
-        const pp = await pdfPages(f, dpi, t => say(note, t));
-        for (let i = 0; i < pp.length; i++) result(out, await toBlob(pp[i].c, 'image/jpeg', q), stem(f) + (pp.length > 1 ? '-page' + (i + 1) : '') + '.jpg');
+        const pp = await pdfPages(f, dpi, t => say(note, `${pfx}${t}`));
+        for (let i = 0; i < pp.length; i++) {
+          const b = await toBlob(pp[i].c, 'image/jpeg', q), name = stem(f) + (pp.length > 1 ? '-page' + (i + 1) : '') + '.jpg';
+          result(out, b, name); completed.push({ blob: b, name });
+        }
       } else {
         const c = await imgCanvas(f);
-        if (to === 'jpg') result(out, await toBlob(c, 'image/jpeg', q), stem(f) + '.jpg'); else pages.push(pageFor(c, fit));
+        if (to === 'jpg') {
+          const b = await toBlob(c, 'image/jpeg', q), name = stem(f) + '.jpg';
+          result(out, b, name); completed.push({ blob: b, name });
+        } else pages.push(pageFor(c, fit));
       }
     }
-    if (pages.length) result(out, toPdf(pages, q), (fs.length === 1 ? stem(fs[0]) : 'converted') + '.pdf');
+    if (pages.length) {
+      const b = toPdf(pages, q), name = (fs.length === 1 ? stem(fs[0]) : 'converted') + '.pdf';
+      result(out, b, name); completed.push({ blob: b, name });
+    }
+    addDownloadAll(out, completed, 'converted files');
     say(note, 'Done.' + (skipped.length ? ' Skipped files that are already PDF: ' + skipped.join(', ') + '.' : ''));
   } catch (e) { say(note, 'Could not convert: ' + (e.message || e)); }
   busy('#cv-go', false);
 };
 
-/* ---------- compress ---------- */
+/* ---------- compress (batch & single) ---------- */
 $('#cp-go').onclick = async () => {
-  const f = picks.cp[0], out = $('#cp-out'), note = $('#cp-note'), kb = +$('#cp-kb').value; out.replaceChildren();
-  if (!f) return say(note, 'Choose a file first.');
+  const fs = picks.cp, out = $('#cp-out'), note = $('#cp-note'), kb = +$('#cp-kb').value;
+  out.replaceChildren();
+  if (!fs.length) return say(note, 'Choose at least one file to compress.');
   if (!(kb >= 5)) return say(note, 'Enter a target size of at least 5 KB.');
-  if (f.size <= kb * 1024) return say(note, 'This file is already ' + fmt(f.size) + ', under your ' + kb + ' KB target, so there is nothing to compress.');
   busy('#cp-go', true); await tick();
+  const completed = [];
+  let underCount = 0, targetMetCount = 0;
   try {
-    let blob;
-    if (isPdf(f)) { const pp = await pdfPages(f, 150, t => say(note, t)); say(note, 'Compressing…'); await tick(); blob = await pdfToSize(pp, kb); }
-    else { say(note, 'Compressing…'); await tick(); blob = await jpegToSize(await imgCanvas(f), kb); }
-    result(out, blob, stem(f) + '-compressed.' + (isPdf(f) ? 'pdf' : 'jpg'), 'was ' + fmt(f.size));
-    say(note, blob.size <= kb * 1024 ? 'Done. The file is under your target.' : 'This is the smallest size I could reach, but it is still above your target.');
-  } catch (e) { say(note, 'Could not compress: ' + (e.message || e)); }
+    for (let i = 0; i < fs.length; i++) {
+      const f = fs[i], pfx = fs.length > 1 ? `[${i + 1}/${fs.length}] ` : '';
+      say(note, `${pfx}Compressing ${f.name}…`); await tick();
+
+      if (f.size <= kb * 1024) {
+        const name = stem(f) + (isPdf(f) ? '.pdf' : '.jpg');
+        result(out, f, name, `already ${fmt(f.size)} (under ${kb} KB target)`);
+        completed.push({ blob: f, name });
+        underCount++;
+        continue;
+      }
+
+      try {
+        let blob;
+        if (isPdf(f)) {
+          const pp = await pdfPages(f, 150, t => say(note, `${pfx}${f.name}: ${t}`));
+          say(note, `${pfx}Optimizing PDF ${f.name}…`); await tick();
+          blob = await pdfToSize(pp, kb);
+        } else {
+          blob = await jpegToSize(await imgCanvas(f), kb);
+        }
+        const name = stem(f) + '-compressed.' + (isPdf(f) ? 'pdf' : 'jpg');
+        const met = blob.size <= kb * 1024;
+        if (met) targetMetCount++;
+        result(out, blob, name, `was ${fmt(f.size)}${met ? '' : ' · best reached'}`);
+        completed.push({ blob, name });
+      } catch (err) {
+        const row = document.createElement('div');
+        row.className = 'res';
+        row.style.color = '#c93b2b';
+        row.textContent = `${f.name}: Failed — ${err.message || err}`;
+        out.append(row);
+      }
+    }
+    addDownloadAll(out, completed, 'compressed files');
+    const totalMet = targetMetCount + underCount;
+    if (fs.length === 1) {
+      const f = fs[0];
+      if (underCount === 1) say(note, `This file was already ${fmt(f.size)}, under your ${kb} KB target.`);
+      else if (targetMetCount === 1) say(note, 'Done. The file is under your target.');
+      else say(note, 'Smallest size reached, but still above target.');
+    } else {
+      say(note, `Done. Processed ${completed.length} of ${fs.length} file(s). ${totalMet} under ${kb} KB.`);
+    }
+  } catch (e) {
+    say(note, 'Could not compress: ' + (e.message || e));
+  }
   busy('#cp-go', false);
 };
 
