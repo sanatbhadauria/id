@@ -1,0 +1,6 @@
+/target/
+**/*.rs.bk
+*.pdf
+*.jpg
+*.png
+.DS_Store

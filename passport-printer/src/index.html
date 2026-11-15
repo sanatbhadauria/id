@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Passport Photo Studio — High Precision Rust Print Studio</title>
+  <style>
+    :root {
+      --bg: #0c151c;
+      --panel: #14222d;
+      --card: #192a38;
+      --ink: #eaf1f7;
+      --muted: #8fa6b8;
+      --line: #263c4e;
+      --accent: #2bc4a9;
+      --accent-hover: #22a890;
+      --accent-glow: rgba(43, 196, 169, 0.2);
+      --danger: #ef4444;
+      --radius: 10px;
+      --shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    header {
+      max-width: 1300px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand svg {
+      width: 36px;
+      height: 36px;
+      color: var(--accent);
+    }
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .badge-rust {
+      background: rgba(43, 196, 169, 0.15);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+    .drop-zone {
+      border: 2px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(0,0,0,0.15);
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    .drop-zone svg {
+      width: 40px;
+      height: 40px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .drop-zone b {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    .drop-zone span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    label span {
+      color: var(--ink);
+    }
+    select, input[type="text"], input[type="number"], input[type="date"] {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--ink);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    select:focus, input:focus {
+      border-color: var(--accent);
+    }
+    .span-2 { grid-column: 1 / -1; }
+    .sliders {
+      display: grid;
+      gap: 12px;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .slider-row span:last-child {
+      font-weight: 700;
+      color: var(--accent);
+      width: 44px;
+      text-align: right;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    button {
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: var(--line);
+      border-color: var(--muted);
+    }
+    button.primary {
+      background: var(--accent);
+      color: #0c151c;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .preview-card {
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sheet-wrapper {
+      width: 100%;
+      background: #080f14;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 480px;
+      position: relative;
+    }
+    .sheet-wrapper img {
+      max-width: 100%;
+      max-height: 600px;
+      border-radius: 2px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: #ffffff;
+    }
+    .sheet-meta {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--card);
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid var(--line);
+    }
+    .action-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .action-bar button {
+      padding: 12px;
+    }
+    .action-bar .primary {
+      grid-column: 1 / -1;
+      font-size: 15px;
+    }
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(12, 21, 28, 0.7);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      z-index: 10;
+      font-weight: 700;
+      gap: 10px;
+    }
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="12" cy="10" r="3"/>
+        <path d="M7 21v-2a5 5 0 0 1 10 0v2"/>
+      </svg>
+      <div>
+        <h1>Passport Photo Studio</h1>
+        <p>High-Precision Photo Grid &amp; Printing Engine in Rust</p>
+      </div>
+    </div>
+    <div class="badge-rust">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      Native Rust + Cairo Vector PDF
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Left Configuration Panel -->
+    <div class="panel">
+      <!-- 1. Photo Upload -->
+      <section class="card">
+        <h2>1. Photo Input</h2>
+        <div class="drop-zone" id="dropZone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <b>Drop photo here or click to browse</b>
+          <span>Supports JPEG, PNG, WebP, TIFF, BMP</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">
+
+        <div class="btn-row" style="margin-top:12px;">
+          <button type="button" id="btnRotate">Rotate 90°</button>
+          <button type="button" id="btnFlip">Flip Horizontally</button>
+          <button type="button" id="btnResetEdits">Reset Edits</button>
+        </div>
+      </section>
+
+      <!-- 2. Photo Size & Paper Dimensions -->
+      <section class="card">
+        <h2>2. Photo Size &amp; Paper Layout</h2>
+        <div class="controls-grid">
+          <label class="span-2">Photo Size Preset
+            <select id="preset">
+              <option value="35x45" selected>35 × 45 mm (Standard Passport / UK / Schengen / India)</option>
+              <option value="51x51">51 × 51 mm / 2 × 2" (US Visa &amp; Passport / India OCI)</option>
+              <option value="35x35">35 × 35 mm (State Exams / Police / Banking)</option>
+              <option value="30x40">30 × 40 mm (Japan / Korea / Indonesia)</option>
+              <option value="33x48">33 × 48 mm (China Visa &amp; Passport)</option>
+              <option value="50x70">50 × 70 mm (Canada Passport)</option>
+              <option value="custom">Custom Dimensions (mm)</option>
+            </select>
+          </label>
+
+          <div id="customSizeRow" class="span-2 controls-grid" style="display:none;">
+            <label>Width (mm)<input type="number" id="customW" min="15" max="150" step="0.5" value="35"></label>
+            <label>Height (mm)<input type="number" id="customH" min="15" max="150" step="0.5" value="45"></label>
+          </div>
+
+          <label>Paper Size
+            <select id="paper">
+              <option value="4x6" selected>4 × 6 inch (4R Photo Paper)</option>
+              <option value="5x7">5 × 7 inch (5R Photo Paper)</option>
+              <option value="a4">A4 (210 × 297 mm)</option>
+              <option value="a5">A5 (148 × 210 mm)</option>
+              <option value="letter">US Letter (8.5 × 11 in)</option>
+            </select>
+          </label>
+
+          <label>Orientation
+            <select id="orientation">
+              <option value="auto" selected>Auto (Best Fit)</option>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </label>
+
+          <label>Photos Count
+            <select id="countMode">
+              <option value="fill" selected>Fill Page (Maximum)</option>
+              <option value="custom">Specific Number...</option>
+            </select>
+          </label>
+
+          <label id="countWrap" style="display:none;">Number to Print
+            <input type="number" id="photoCount" min="1" max="64" value="8">
+          </label>
+
+          <label>Alignment
+            <select id="alignment">
+              <option value="center" selected>Centered on Page</option>
+              <option value="topleft">Top-Left</option>
+            </select>
+          </label>
+
+          <label>Cutting Borders
+            <select id="border">
+              <option value="hairline" selected>Thin Hairline Guide</option>
+              <option value="cropmarks">Corner Crop Marks</option>
+              <option value="dashed">Dashed Lines</option>
+              <option value="none">Borderless</option>
+            </select>
+          </label>
+
+          <label>Photo Gap (mm)
+            <input type="number" id="gapMm" min="0" max="20" step="0.5" value="2.5">
+          </label>
+
+          <label>Sheet Margin (mm)
+            <input type="number" id="marginMm" min="0" max="30" step="1" value="5">
+          </label>
+        </div>
+      </section>
+
+      <!-- 3. Name & Date Stamps -->
+      <section class="card">
+        <h2>3. Candidate Name &amp; Date Stamps</h2>
+        <div class="controls-grid">
+          <label class="span-2">Text Stamp Format
+            <select id="textType">
+              <option value="none" selected>None (Standard Photo)</option>
+              <option value="name_dop">Candidate Name &amp; Date of Photo (DOP)</option>
+              <option value="name_dob">Candidate Name &amp; Date of Birth (DOB)</option>
+              <option value="dop">Date of Photo Only (DOP)</option>
+              <option value="dob">Date of Birth Only (DOB)</option>
+              <option value="name">Candidate Full Name Only</option>
+              <option value="custom">Custom Two Lines</option>
+            </select>
+          </label>
+
+          <div id="textFields" class="span-2 controls-grid" style="display:none;">
+            <label class="span-2">Candidate Full Name / Line 1
+              <input type="text" id="textName" placeholder="e.g. RAHUL SHARMA" maxlength="40">
+            </label>
+
+            <label>Date (DD/MM/YYYY)
+              <input type="text" id="textDate" placeholder="DD/MM/YYYY" maxlength="20">
+            </label>
+
+            <div style="display:flex; align-items:flex-end;">
+              <button type="button" id="btnToday" style="width:100%; height:37px;">Use Today's Date</button>
+            </div>
+
+            <label class="span-2">Strip Style
+              <select id="textStyle">
+                <option value="white_strip" selected>Crisp White Strip (Black Text)</option>
+                <option value="black_strip">Solid Black Strip (White Text)</option>
+                <option value="overlay">Dark Semi-Transparent Overlay</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Adjustments & Zoom -->
+      <section class="card">
+        <h2>4. Adjustments &amp; Framing</h2>
+        <div class="sliders">
+          <div class="slider-row">
+            <span>Size Scale (Zoom):</span>
+            <input type="range" id="scale" min="60" max="180" value="100">
+            <span id="scaleVal">100%</span>
+          </div>
+          <div class="slider-row">
+            <span>Brightness:</span>
+            <input type="range" id="brightness" min="-100" max="100" value="0">
+            <span id="brVal">0</span>
+          </div>
+          <div class="slider-row">
+            <span>Contrast:</span>
+            <input type="range" id="contrast" min="-100" max="100" value="0">
+            <span id="ctVal">0</span>
+          </div>
+          <div class="slider-row">
+            <span>Saturation:</span>
+            <input type="range" id="saturation" min="-100" max="100" value="0">
+            <span id="satVal">0</span>
+          </div>
+          <div style="margin-top:6px;">
+            <label style="flex-direction:row; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="grayscale" style="width:16px; height:16px; accent-color:var(--accent);">
+              <span>Convert to Grayscale (B&amp;W photo requirement)</span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Live Preview & Export Panel -->
+    <div class="preview-card card">
+      <h2>Live Print Preview</h2>
+      <div class="sheet-wrapper" id="sheetWrapper">
+        <div class="loading-overlay" id="loadingOverlay">
+          <div class="spinner"></div> Rendering high-resolution sheet...
+        </div>
+        <img id="previewImg" alt="Passport print preview will appear here">
+      </div>
+
+      <div class="sheet-meta">
+        <b id="summaryText">Upload a photo to generate sheet</b>
+        <span style="color:var(--accent); font-weight:700;">100% True Physical Scale</span>
+      </div>
+
+      <div class="action-bar">
+        <button type="button" class="primary" id="btnDownloadPdf" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Download Print-Ready PDF (100% Scale)
+        </button>
+        <button type="button" id="btnDownloadJpeg" disabled>Download JPEG Sheet (300 DPI)</button>
+        <button type="button" id="btnDownloadSingle" disabled>Download Single Photo (300 DPI)</button>
+        <button type="button" class="span-2" id="btnPrint" disabled style="background:#1f3647;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          Print Sheet Directly
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentImageBase64 = null;
+    let rotateDeg = 0;
+    let flipH = false;
+    let renderTimer = null;
+
+    const $ = id => document.getElementById(id);
+
+    // Initial default sample photo (avatar) for instant preview
+    function initPlaceholder() {
+      const c = document.createElement('canvas');
+      c.width = 400;
+      c.height = 500;
+      const ctx = c.getContext('2d');
+      // Background gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, 500);
+      grad.addColorStop(0, '#dbeafe');
+      grad.addColorStop(1, '#93c5fd');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 400, 500);
+
+      // Body silhouette
+      ctx.fillStyle = '#1e3a8a';
+      ctx.beginPath();
+      ctx.arc(200, 460, 150, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Head silhouette
+      ctx.fillStyle = '#f5d0b5';
+      ctx.beginPath();
+      ctx.ellipse(200, 220, 85, 110, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = '#262626';
+      ctx.beginPath();
+      ctx.arc(200, 180, 95, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      currentImageBase64 = c.toDataURL('image/jpeg', 0.9);
+      scheduleRender();
+    }
+
+    // Drop zone & file input
+    const dropZone = $('dropZone');
+    const fileInput = $('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        loadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) {
+        loadFile(fileInput.files[0]);
+      }
+    });
+
+    function loadFile(file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        currentImageBase64 = ev.target.result;
+        rotateDeg = 0;
+        flipH = false;
+        enableButtons();
+        scheduleRender();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function enableButtons() {
+      ['btnDownloadPdf', 'btnDownloadJpeg', 'btnDownloadSingle', 'btnPrint'].forEach(id => {
+        $(id).disabled = false;
+      });
+    }
+
+    // Sliders & listeners
+    const sliderMap = [
+      ['scale', 'scaleVal', '%'],
+      ['brightness', 'brVal', ''],
+      ['contrast', 'ctVal', ''],
+      ['saturation', 'satVal', '']
+    ];
+    sliderMap.forEach(([id, valId, unit]) => {
+      $(id).addEventListener('input', () => {
+        $(valId).textContent = $(id).value + unit;
+        scheduleRender();
+      });
+    });
+
+    // Preset & Custom
+    $('preset').addEventListener('change', () => {
+      $('customSizeRow').style.display = $('preset').value === 'custom' ? 'grid' : 'none';
+      scheduleRender();
+    });
+
+    // Count mode
+    $('countMode').addEventListener('change', () => {
+      $('countWrap').style.display = $('countMode').value === 'custom' ? 'flex' : 'none';
+      scheduleRender();
+    });
+
+    // Text type
+    $('textType').addEventListener('change', () => {
+      $('textFields').style.display = $('textType').value !== 'none' ? 'grid' : 'none';
+      scheduleRender();
+    });
+
+    // Today's date button
+    $('btnToday').addEventListener('click', () => {
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      $('textDate').value = `${dd}/${mm}/${yyyy}`;
+      scheduleRender();
+    });
+
+    // Rotation & flip
+    $('btnRotate').addEventListener('click', () => {
+      rotateDeg = (rotateDeg + 90) % 360;
+      scheduleRender();
+    });
+    $('btnFlip').addEventListener('click', () => {
+      flipH = !flipH;
+      scheduleRender();
+    });
+    $('btnResetEdits').addEventListener('click', () => {
+      rotateDeg = 0;
+      flipH = false;
+      $('scale').value = 100;
+      $('scaleVal').textContent = '100%';
+      $('brightness').value = 0;
+      $('brVal').textContent = '0';
+      $('contrast').value = 0;
+      $('ctVal').textContent = '0';
+      $('saturation').value = 0;
+      $('satVal').textContent = '0';
+      $('grayscale').checked = false;
+      scheduleRender();
+    });
+
+    // Other inputs
+    ['paper', 'orientation', 'photoCount', 'alignment', 'border', 'gapMm', 'marginMm',
+     'customW', 'customH', 'textName', 'textDate', 'textStyle', 'grayscale'].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener('input', scheduleRender);
+    });
+
+    function getPayload() {
+      return {
+        image_base64: currentImageBase64,
+        paper: $('paper').value,
+        orientation: $('orientation').value,
+        preset: $('preset').value,
+        custom_w: parseFloat($('customW').value) || 35,
+        custom_h: parseFloat($('customH').value) || 45,
+        count: $('countMode').value === 'custom' ? (parseInt($('photoCount').value, 10) || 8) : null,
+        alignment: $('alignment').value,
+        gap_mm: parseFloat($('gapMm').value) || 2.5,
+        margin_mm: parseFloat($('marginMm').value) || 5.0,
+        border: $('border').value,
+        text_type: $('textType').value,
+        text_name: $('textName').value.trim(),
+        text_date: $('textDate').value.trim(),
+        text_custom2: '',
+        text_style: $('textStyle').value,
+        brightness: parseFloat($('brightness').value) || 0,
+        contrast: parseFloat($('contrast').value) || 0,
+        saturation: parseFloat($('saturation').value) || 0,
+        grayscale: $('grayscale').checked,
+        rotate: rotateDeg,
+        flip_h: flipH,
+        scale: (parseFloat($('scale').value) || 100) / 100.0,
+        crop_x: null,
+        crop_y: null,
+        crop_w: null,
+        crop_h: null
+      };
+    }
+
+    function scheduleRender() {
+      if (!currentImageBase64) return;
+      if (renderTimer) clearTimeout(renderTimer);
+      renderTimer = setTimeout(renderPreview, 120);
+    }
+
+    async function renderPreview() {
+      const payload = getPayload();
+      $('loadingOverlay').style.display = 'flex';
+
+      try {
+        const res = await fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          $('previewImg').src = url;
+          enableButtons();
+
+          const paperName = $('paper').options[$('paper').selectedIndex].text;
+          const presetName = $('preset').options[$('preset').selectedIndex].text;
+          $('summaryText').textContent = `${presetName} on ${paperName}`;
+        }
+      } catch (e) {
+        console.error('Preview error:', e);
+      } finally {
+        $('loadingOverlay').style.display = 'none';
+      }
+    }
+
+    // Export helpers
+    async function downloadFile(endpoint, defaultFilename) {
+      const payload = getPayload();
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = defaultFilename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      } catch (e) {
+        alert('Download failed: ' + e);
+      }
+    }
+
+    $('btnDownloadPdf').addEventListener('click', () => downloadFile('/api/export/pdf', 'passport-photos.pdf'));
+    $('btnDownloadJpeg').addEventListener('click', () => downloadFile('/api/export/jpeg', 'passport-sheet-300dpi.jpg'));
+    $('btnDownloadSingle').addEventListener('click', () => downloadFile('/api/export/single', 'passport-photo-300dpi.jpg'));
+
+    $('btnPrint').addEventListener('click', async () => {
+      const payload = getPayload();
+      try {
+        const res = await fetch('/api/print', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const msg = await res.text();
+        alert(msg);
+      } catch (e) {
+        alert('Print error: ' + e);
+      }
+    });
+
+    // Start with default sample photo
+    initPlaceholder();
+  </script>
+</body>
+</html>
