@@ -873,8 +873,8 @@ function isPointInPolygon(polygon, point) {
  * Calculates aspect ratio of the card crop selection.
  */
 function calculateAspectRatio(slot, options) {
-  if (!slot.persp) return slot.crop.w / slot.crop.h;
   if (options.lockAspect) return CARD_ASPECT_RATIO;
+  if (!slot.persp) return slot.crop.w / slot.crop.h;
 
   const q = slot.quad;
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -1092,22 +1092,12 @@ $('#print').addEventListener('click', () => {
 });
 
 // Sheet configuration input changes
-['cw', 'gap', 'layout', 'pos', 'round', 'guide'].forEach(inputId => {
+['cw', 'gap', 'layout', 'pos', 'lock', 'round', 'guide'].forEach(inputId => {
   const elem = $('#' + inputId);
-  if (elem) elem.addEventListener('input', requestPreview);
-});
-
-$('#lock').addEventListener('change', () => {
-  if ($('#lock').checked) {
-    SLOT_IDS.forEach(id => {
-      const s = slots[id];
-      if (s.img) {
-        initDefaultCrop(s);
-        drawCropCanvas(s);
-      }
-    });
+  if (elem) {
+    elem.addEventListener('input', requestPreview);
+    elem.addEventListener('change', requestPreview);
   }
-  requestPreview();
 });
 
 window.addEventListener('resize', () => {
